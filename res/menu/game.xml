@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="karega.scott.alright.GameActivity" >
+
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:title="@string/action_settings"
+        android:showAsAction="never"/>
+
+    <item android:id="@+id/search"
+          android:title="@string/DIRECTIONS_CHOOSE_END_POINT"
+          android:showAsAction="always"
+          android:actionViewClass="android.widget.SearchView" />
+</menu>

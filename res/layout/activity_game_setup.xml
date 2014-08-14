@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="fill_parent"
+    android:layout_width="fill_parent"
+    android:orientation="vertical">
+    
+    <!--  Maps.apk  directions_input_panel.xml -->
+	<LinearLayout android:id="@+id/game_input_panel" style="@style/GameInputPanelContent">
+
+	    <LinearLayout
+	        style="@style/GameDestinationInputContent"
+	        android:layout_height="@dimen/game_waypoint_input_height"
+	        android:baselineAligned="false"
+	        android:orientation="horizontal" >
+
+	        <FrameLayout android:layout_width="@dimen/game_left_icon_area_width" android:layout_height="fill_parent" android:layout_weight="0.0" style="@style/Container">
+	            <ImageView android:layout_gravity="center" 
+	                android:src="@drawable/ic_directions_form_dots" 
+	                style="@style/CenteredImage" 
+	                android:contentDescription="@string/ACCESSIBILITY_LOCATION" />
+
+	            <LinearLayout
+	                style="@style/MatchParentContainer"
+	                android:layout_gravity="center"
+	                android:background="@color/white"
+	                android:orientation="vertical" >
+
+	                <ImageView
+	                    android:id="@+id/game_mylocation_icon"
+	                    style="@style/CenteredImage"
+	                    android:layout_weight="1.0"
+	                    android:background="@color/white"
+	                    android:contentDescription="@string/ACCESSIBILITY_LOCATION"
+	                    android:src="@drawable/ic_directions_form_destination_notselected" />
+
+	                <ImageView
+	                    android:id="@+id/game_mydestination_icon"
+	                    style="@style/CenteredImage"
+	                    android:layout_weight="1.0"
+	                    android:background="@color/white"
+	                    android:contentDescription="@string/ACCESSIBILITY_LOCATION"
+	                    android:src="@drawable/ic_directions_form_destination_notselected" />
+
+	            </LinearLayout>
+	        </FrameLayout>
+	        
+	        <LinearLayout android:layout_width="0.0dip" android:layout_height="fill_parent" android:layout_weight="1.0" style="@style/DividerListContent">
+
+	            <TextView
+	                android:id="@+id/game_mylocation_textbox"
+	                style="@style/GameWaypointTextBox"
+	                android:background="@color/white"
+	                android:hint="@string/GAME_START_POINT_MYLOCATION" />
+
+	            <TextView
+	                android:id="@+id/game_mydestination_textbox"
+	                style="@style/GameWaypointTextBox"
+	                android:background="@color/white"
+	                android:hint="@string/DIRECTIONS_CHOOSE_END_POINT" />
+
+	        </LinearLayout>
+	    </LinearLayout>
+	</LinearLayout>
+
+	<!--  Maps.apk  directions_drivingtip_card.xml -->	
+
+	<LinearLayout
+	    android:id="@+id/game_card"
+	    style="@style/UnClickableNoPaddingCard" >
+
+	    <LinearLayout android:orientation="vertical" android:id="@+id/game_card_summary" style="@style/Button">        
+	        <fragment
+			  android:id="@+id/game_card_summary_map"
+			  android:layout_width="fill_parent"
+			  android:layout_height="@dimen/game_tripcard_summary_map_height"
+			  android:name="com.google.android.gms.maps.MapFragment"/>        
+	    </LinearLayout>
+	    
+	    <LinearLayout android:orientation="vertical" android:id="@+id/game_card_buttons" style="@style/Button">
+	        <View android:id="@+id/startgame_divider" android:layout_marginLeft="@dimen/game_card_padding" android:layout_marginRight="@dimen/game_card_padding" style="@style/HorizontalDivider" />
+		    <LinearLayout android:orientation="horizontal" style="@style/Button">		    	
+		    	
+		    	<TextView
+		    	    android:id="@+id/game_card_buttons_left_textbox"
+		    	    style="@style/PaddedIconTextButton"
+		    	    android:drawableLeft="@drawable/ic_directions_highlighted_left"
+		    	    android:text="@string/GAME_START_BUTTON"
+		    	    android:textAppearance="@style/CardFooterLinkText"
+		    	    android:visibility="visible" />
+		    	
+		    	<TextView android:textAppearance="@style/CardFooterLinkText" 
+		    	    android:id="@+id/game_card_buttons_right_textbox" 
+		    	    android:visibility="visible" 
+		    	    android:text="@string/GAME_START_BUTTON" 
+		    	    android:drawableRight="@drawable/ic_directions_highlighted_right" 
+		    	    style="@style/PaddedIconTextButton" />
+		    </LinearLayout>
+		</LinearLayout>
+	</LinearLayout>
+
+		  	  
+</LinearLayout>

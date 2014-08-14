@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<inset android:drawable="@drawable/new_card" android:insetLeft="@dimen/cardlist_side_padding" android:insetRight="@dimen/cardlist_side_padding"
+  xmlns:android="http://schemas.android.com/apk/res/android" />

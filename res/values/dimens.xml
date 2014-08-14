@@ -1,0 +1,45 @@
+<resources>
+
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+
+    <!-- Maps.apk dimensions -->
+    <dimen name="gf_padding">7.0dip</dimen>
+    <dimen name="gf_list_item_padding">12.0dip</dimen>
+    <dimen name="gf_twice_padding">14.0dip</dimen>
+    <dimen name="gf_one_half_padding">8.0dip</dimen>
+    <dimen name="gf_list_item_height">60.0dip</dimen>
+    <dimen name="gf_standard_text_padding">16.0dip</dimen>
+    <dimen name="text_size_micro">14.0sp</dimen>
+    <dimen name="text_size_small">15.0sp</dimen>
+    <dimen name="text_size_link">15.0sp</dimen>
+    <dimen name="text_size_medium">17.0sp</dimen>
+    <dimen name="text_size_info">18.0sp</dimen>
+    <dimen name="text_size_largeSheetTitle">20.0sp</dimen>
+    <dimen name="text_size_large">21.0sp</dimen>
+    <dimen name="text_size_profileTitle">24.0sp</dimen>
+    <dimen name="text_size_xLarge">28.0sp</dimen>
+    
+    <dimen name="primary_padding">15.0dip</dimen>
+    <dimen name="padding_medium">8.0dip</dimen>
+    <dimen name="padding_main">15.0dip</dimen>
+    <item type="dimen" name="card_side_padding">@dimen/padding_main</item>
+    <item type="dimen" name="game_card_padding">@dimen/padding_main</item>
+    <item type="dimen" name="directions_card_padding">@dimen/padding_main</item>
+    
+    <dimen name="game_waypoint_input_height">108.0dip</dimen>
+    <dimen name="search_input_height">54.0dip</dimen>
+    <dimen name="game_left_icon_area_width">54.0dip</dimen>
+    <dimen name="quaternary_padding">8.0dip</dimen>
+    <item type="dimen" name="directions_input_panel_left_padding">@dimen/quaternary_padding</item>   
+    
+    <dimen name="game_tripcard_summary_map_height">320.0dip</dimen>
+	<dimen name="cardlist_side_padding">10.0dip</dimen>
+    <dimen name="card_topbottom_padding">10.0dip</dimen>
+	
+	<dimen name="thin_divider_width">1.0px</dimen>
+    <dimen name="text_spacer">8.0dip</dimen>
+	<dimen name="full_width_button_height">60.0dip</dimen>
+		
+</resources>

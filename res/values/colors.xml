@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--  Maps.apk colors -->
+    <color name="primary_background_grey">#eeeeee</color>
+	<color name="primary_grey">#ff222222</color>
+	<color name="selected_background">#ffc1e9f7</color>
+    <color name="secondary_grey">#ff555555</color>
+    <color name="divider_grey">#ffdedede</color>
+    <color name="white">#ffffff</color>
+    <color name="blue">#4285F4</color>
+    	
+</resources>
