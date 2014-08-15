@@ -3,10 +3,6 @@
 
     <string name="app_name">Alright</string>
     <string name="action_settings">Settings</string>
-
-    <!-- SHOULD NOT STORE THIS KEY HERE * REMOVE BEFORE COMMITTING TO GitHub/TFS -->
-    <string name="google_dev_api_key">AIzaSyBex9rxkHDu9fTOB2-QiI-QfnEaq7jDFhg</string>
-	<string name="google_prod_api_key">AlzaSyCy-GfB2X7x65cn1e82rEzxtCpz5pEPXA0</string>
 	
     <integer name="google_play_services_version">5089000</integer>
 
