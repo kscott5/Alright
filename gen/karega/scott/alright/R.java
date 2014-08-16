@@ -456,23 +456,24 @@ containing a value of this type.
         public static final int ic_directions_form_destination=0x7f02001c;
         public static final int ic_directions_form_destination_notselected=0x7f02001d;
         public static final int ic_directions_form_dots=0x7f02001e;
-        public static final int ic_directions_form_startpoint=0x7f02001f;
-        public static final int ic_directions_form_swap=0x7f020020;
-        public static final int ic_directions_highlighted_left=0x7f020021;
-        public static final int ic_directions_highlighted_right=0x7f020022;
-        public static final int ic_directions_walking=0x7f020023;
-        public static final int ic_launcher=0x7f020024;
-        public static final int ic_omni_box_walking=0x7f020025;
-        public static final int ic_plusone_medium_off_client=0x7f020026;
-        public static final int ic_plusone_small_off_client=0x7f020027;
-        public static final int ic_plusone_standard_off_client=0x7f020028;
-        public static final int ic_plusone_tall_off_client=0x7f020029;
-        public static final int inset_new_card=0x7f02002a;
-        public static final int new_card=0x7f02002b;
-        public static final int new_card_highlighted=0x7f02002c;
-        public static final int new_card_selected=0x7f02002d;
-        public static final int powered_by_google_dark=0x7f02002e;
-        public static final int powered_by_google_light=0x7f02002f;
+        public static final int ic_directions_form_mylocation=0x7f02001f;
+        public static final int ic_directions_form_startpoint=0x7f020020;
+        public static final int ic_directions_form_swap=0x7f020021;
+        public static final int ic_directions_highlighted_left=0x7f020022;
+        public static final int ic_directions_highlighted_right=0x7f020023;
+        public static final int ic_directions_walking=0x7f020024;
+        public static final int ic_launcher=0x7f020025;
+        public static final int ic_omni_box_walking=0x7f020026;
+        public static final int ic_plusone_medium_off_client=0x7f020027;
+        public static final int ic_plusone_small_off_client=0x7f020028;
+        public static final int ic_plusone_standard_off_client=0x7f020029;
+        public static final int ic_plusone_tall_off_client=0x7f02002a;
+        public static final int inset_new_card=0x7f02002b;
+        public static final int new_card=0x7f02002c;
+        public static final int new_card_highlighted=0x7f02002d;
+        public static final int new_card_selected=0x7f02002e;
+        public static final int powered_by_google_dark=0x7f02002f;
+        public static final int powered_by_google_light=0x7f020030;
     }
     public static final class id {
         public static final int action_settings=0x7f08002a;
@@ -537,13 +538,13 @@ containing a value of this type.
         public static final int tracker=0x7f0b0004;
     }
     public static final class string {
-        public static final int ACCESSIBILITY_LOCATION=0x7f070028;
-        public static final int DIRECTIONS_CHOOSE_END_POINT=0x7f070027;
-        public static final int GAME_START_BUTTON=0x7f070029;
+        public static final int ACCESSIBILITY_LOCATION=0x7f070026;
+        public static final int DIRECTIONS_CHOOSE_END_POINT=0x7f070025;
+        public static final int GAME_START_BUTTON=0x7f070027;
         /**  Maps.apk strings 
          */
-        public static final int GAME_START_POINT_MYLOCATION=0x7f070026;
-        public static final int PLACE_HOLDER_TEXT=0x7f070025;
+        public static final int GAME_START_POINT_MYLOCATION=0x7f070024;
+        public static final int PLACE_HOLDER_TEXT=0x7f070023;
         public static final int action_settings=0x7f07001b;
         public static final int app_name=0x7f07001a;
         /**  Button in confirmation dialog to enable Google Play services.  Clicking it
@@ -635,23 +636,19 @@ containing a value of this type.
         /**  Long form sign-in button text [CHAR LIMIT=30] 
          */
         public static final int common_signin_button_text_long=0x7f070018;
-        /**  SHOULD NOT STORE THIS KEY HERE * REMOVE BEFORE COMMITTING TO GitHub/TFS 
-         */
-        public static final int google_dev_api_key=0x7f07001c;
-        public static final int google_prod_api_key=0x7f07001d;
         /**  The hint text that appears in the search box. 
          */
-        public static final int search_hint=0x7f07001f;
+        public static final int search_hint=0x7f07001d;
         /**  The label for use as a searchable item 
          */
-        public static final int search_label=0x7f07001e;
+        public static final int search_label=0x7f07001c;
         /**  The description that will show up in the search settings for this source. 
          */
-        public static final int settings_description=0x7f070020;
-        public static final int title_activity_game_help=0x7f070024;
-        public static final int title_activity_game_location_tracker=0x7f070023;
-        public static final int title_activity_game_setup=0x7f070022;
-        public static final int title_activity_main=0x7f070021;
+        public static final int settings_description=0x7f07001e;
+        public static final int title_activity_game_help=0x7f070022;
+        public static final int title_activity_game_location_tracker=0x7f070021;
+        public static final int title_activity_game_setup=0x7f070020;
+        public static final int title_activity_main=0x7f07001f;
         /**  Text on a placeholder buy button when Google Play services is not
          available or up-to-date 
          */

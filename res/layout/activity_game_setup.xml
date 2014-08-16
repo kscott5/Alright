@@ -16,6 +16,7 @@
 	        <FrameLayout android:layout_width="@dimen/game_left_icon_area_width" android:layout_height="fill_parent" android:layout_weight="0.0" style="@style/Container">
 	            <ImageView android:layout_gravity="center" 
 	                android:src="@drawable/ic_directions_form_dots" 
+	                android:background="@color/white"
 	                style="@style/CenteredImage" 
 	                android:contentDescription="@string/ACCESSIBILITY_LOCATION" />
 

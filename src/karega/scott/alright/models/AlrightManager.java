@@ -27,6 +27,9 @@ import android.util.Log;
 public class AlrightManager implements LocationListener {
 	private final static String LOG_TAG = "Alright Manager";
 
+	public final static String ACTION_LOCATION_SUGGESTION = "karega.scott.alright.action.LOCATION_SUGGESTION";
+	public final static String SUGGESTION_QUERY_POSITION = "suggestion_query_position";
+	
 	public final static String RIGHT_TURNS_ONLY = "right_turns_only";
 	
 	public final static int MAX_RESULTS = 10;
@@ -398,7 +401,29 @@ public class AlrightManager implements LocationListener {
 		
 		return addr;
 	} // end getAddress
+	
+	
+	/**
+	 * Uses the {@link Geocoder} to find the address
+	 * @param locationName
+	 * @param position
+	 * @return
+	 */
+	public Address getAddress(String locationName, int position) {
+		Log.d(LOG_TAG, String.format("Get address for %s at position %s", locationName, position));
+		
+		Address addr = null;
+		if(position < 0) return addr;
 
+		List<Address> addrs = this.getAddresses(locationName);
+		if(addrs.size() > 0) {
+			addr = addrs.get(position);
+		}
+		
+		return addr;
+	} // end getAddress
+	
+	
 	/**
 	 * Uses the {@link Geocoder} to find suggested addresses
 	 * @param locationName is the suggestion query text

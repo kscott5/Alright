@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <searchable xmlns:android="http://schemas.android.com/apk/res/android"
     android:label="@string/title_activity_game_setup"
-    android:hint="@string/search_hint" 
-    android:voiceSearchMode="showVoiceSearchButton|launchRecognizer"
+    android:hint="@string/search_hint"
     android:searchSuggestAuthority="karega.scott.alright.provider.Location"
     android:searchSuggestIntentAction="android.intent.action.VIEW"
     android:searchSuggestSelection=" ? " 

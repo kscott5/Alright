@@ -12,6 +12,9 @@ import karega.scott.alright.models.AlrightManager.ManagerState;
 import android.app.ActionBar;
 import android.widget.ImageView;
 import android.widget.SearchView;
+import android.widget.SearchView.OnCloseListener;
+import android.widget.SearchView.OnQueryTextListener;
+import android.widget.SearchView.OnSuggestionListener;
 import android.app.SearchManager;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -28,11 +31,14 @@ import android.widget.TextView;
 /*
  * Activity used to setup game parameters for play
  */
-public class GameSetupActivity extends AlrightBaseActivity implements OnClickListener {
+public class GameSetupActivity extends AlrightBaseActivity implements 
+	OnClickListener,
+	OnCloseListener,
+	OnSuggestionListener,
+	OnQueryTextListener
+{
 	private final static String LOG_TAG ="Game Setup Activity";
 
-	public final static String LOCATION_SUGGESTION = "karega.scott.alright.action.LOCATION_SUGGESTION";
-	
 	private ActionBar actionBar;
 	private GoogleMap map;
 	
@@ -43,12 +49,16 @@ public class GameSetupActivity extends AlrightBaseActivity implements OnClickLis
 	private TextView gameCardButtonsLeft;
 	private TextView gameCardButtonsRight;
 	
+	private String queryText;
+	
 	/**
 	 * Initializes all instance objects
 	 */
 	private void init() {
 		Log.d(LOG_TAG, "Initialize instance objects");
 
+		this.queryText = "";
+		
 		// Initialize all UI controls before anything else
 		this.actionBar = this.getActionBar();
 		this.actionBar.hide();
@@ -64,6 +74,8 @@ public class GameSetupActivity extends AlrightBaseActivity implements OnClickLis
 		this.myDestinationText.setOnClickListener(this);
 	
 		this.myLocationIcon = (ImageView)this.findViewById(R.id.game_mylocation_icon);
+		this.myLocationIcon.requestFocus();
+		
 		this.myDestinationIcon = (ImageView)this.findViewById(R.id.game_mydestination_icon);
 
 		if (this.map == null) {
@@ -76,6 +88,7 @@ public class GameSetupActivity extends AlrightBaseActivity implements OnClickLis
 			
 			this.map.setMyLocationEnabled(true);
 		} // end if
+
 		
 		this.manager.connect();
 	} // end init
@@ -84,10 +97,10 @@ public class GameSetupActivity extends AlrightBaseActivity implements OnClickLis
 	protected void onNewIntent(Intent intent) {
 		Log.d(LOG_TAG, "New intent initiated...");
 
-		//this.init();
-
-		String query = intent.getStringExtra(SearchManager.QUERY);
-		this.manager.setMyDestination(query);
+		if( intent.getAction().equals(AlrightManager.ACTION_LOCATION_SUGGESTION) || intent.getAction().equals(Intent.ACTION_SEARCH)) {
+			String query = intent.getStringExtra(SearchManager.QUERY);
+			this.manager.setMyDestination(query);
+		}
 	}
 	
 	@Override
@@ -108,11 +121,15 @@ public class GameSetupActivity extends AlrightBaseActivity implements OnClickLis
 		getMenuInflater().inflate(R.menu.game, menu);
 		
 		SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
+		searchView.setBackgroundResource(R.color.white);
 		searchView.setIconified(false);
-
+		
 	    searchView.setSearchableInfo(this.manager.getSearchManager()
 	    		.getSearchableInfo(getComponentName()));
 	    
+	    searchView.setOnSuggestionListener(this);
+	    searchView.setOnQueryTextListener(this);
+	    searchView.setOnCloseListener(this);
 	    
 		return super.onCreateOptionsMenu(menu);
 	}
@@ -177,13 +194,12 @@ public class GameSetupActivity extends AlrightBaseActivity implements OnClickLis
 				
 			case AlrightManager.STATE_TYPE_NEW_GAME:
 				bm = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_directions_form_destination_notselected);
-				this.myLocationIcon.setImageBitmap(bm);
-				this.myLocationIcon.setImageBitmap(bm);
+				this.myDestinationIcon.setImageBitmap(bm);
 				this.myDestinationText.setText("");
 				break;
 			
 			case AlrightManager.STATE_TYPE_MY_LOCATION:				
-				bm = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_directions_form_startpoint);
+				bm = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_directions_form_mylocation);
 				this.myLocationIcon.setImageBitmap(bm);
 				
 				this.animateCamera((Address)state.stateData, false, null, 0);
@@ -222,4 +238,44 @@ public class GameSetupActivity extends AlrightBaseActivity implements OnClickLis
 		
 		this.map.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 12.0f));
 	} // end animateCamera
+
+	@Override
+	public boolean onSuggestionClick(int position) {
+		this.queryText = AlrightManager.addressToString(this.manager.getAddress(queryText, position));
+		if(this.queryText == null)
+			return false;
+		
+		// TODO: Review this code. Should position be included on content uri.
+		// For instance String query = String.format("content://karega.scott.alright.provider/suggestion_query/%s ?", position);
+		Intent intent = new Intent(this, GameSetupActivity.class);
+		
+		intent.setAction(AlrightManager.ACTION_LOCATION_SUGGESTION);
+		intent.putExtra(SearchManager.QUERY, this.queryText);
+		
+		this.startActivity(intent);
+		return true;
+	}
+
+	@Override
+	public boolean onSuggestionSelect(int position) {
+		return false;
+	}
+
+	@Override
+	public boolean onQueryTextChange(String newText) {
+		this.queryText = newText;
+		return true;
+	}
+
+	@Override
+	public boolean onQueryTextSubmit(String query) {
+		this.queryText = query;
+		return true;
+	}
+
+	@Override
+	public boolean onClose() {
+		this.actionBar.hide();
+		return true;
+	}
 } // end GameActivity
