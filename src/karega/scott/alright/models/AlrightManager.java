@@ -111,12 +111,13 @@ public class AlrightManager implements
 		public final float Axis_Z_Heading;
 		public final boolean useDegrees;
 		public final String Direction;
+		public final String Direction_Previous;
 		
-		public TrackingDetails(String providerName, float zHeading,	float xPitch, float yRoll) {
-			this(providerName, zHeading, xPitch, yRoll, true);
+		public TrackingDetails(String providerName, float zHeading,	float xPitch, float yRoll, String previousDirection) {
+			this(providerName, zHeading, xPitch, yRoll, previousDirection, true);
 		}
 		
-		public TrackingDetails(String providerName, float zHeading,	float xPitch, float yRoll, boolean useDegrees) {
+		public TrackingDetails(String providerName, float zHeading,	float xPitch, float yRoll, String previousDirection, boolean useDegrees) {
 			this.Provider = providerName;
 			
 			if(this.useDegrees = useDegrees) {
@@ -130,6 +131,7 @@ public class AlrightManager implements
 			}
 			
 			this.Direction = AlrightManager.headingToCompassValue(this.Axis_Z_Heading);
+			this.Direction_Previous = previousDirection;
 		}	
 
 		@Override
@@ -140,6 +142,7 @@ public class AlrightManager implements
 			builder.append(String.format("Roll (Y): %s, ", this.Axis_Y_Roll));
 			builder.append(String.format("Heading (Z): %s", this.Axis_Z_Heading));
 			builder.append(String.format("Direction: %s", this.Direction));
+			builder.append(String.format("Direction Previous: %s", this.Direction_Previous));
 			
 			return builder.toString();
 		}		
@@ -824,7 +827,8 @@ public class AlrightManager implements
 
 			String locationProvider = this.getBestProviderForLocationUpdates();
 			TrackingDetails trackingDetails = new TrackingDetails(locationProvider, 
-					values[0 /*AXIS_Z*/], values[1/*AXIS_X*/], values[2/*AXIS_Y*/]);
+					values[0 /*AXIS_Z*/], values[1/*AXIS_X*/], values[2/*AXIS_Y*/], 
+					this.currentDirection.toString());
 
 			if(this.currentDirection.length() == 0) {
 				this.currentDirection = new StringBuilder(trackingDetails.Direction);
