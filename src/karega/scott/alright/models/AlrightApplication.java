@@ -1,15 +1,16 @@
 package karega.scott.alright.models;
 
-import java.io.FileOutputStream;
-import java.io.PrintStream;
-
 import android.app.Application;
 import android.content.Context;
+import android.util.Log;
 
-public class AlrightApplication extends Application implements Thread.UncaughtExceptionHandler {
-	public final static String LOG_FILE_NAME = "alright.log";
-	
-	public AlrightApplication() {}
+public class AlrightApplication extends Application implements 
+	Thread.UncaughtExceptionHandler 
+{
+	private final static String LOG_TAG = "Alright Application";
+		
+	public AlrightApplication() {
+	}
 	
 	@Override
 	public void onCreate() {
@@ -18,15 +19,12 @@ public class AlrightApplication extends Application implements Thread.UncaughtEx
 
 	@Override
 	public void uncaughtException(Thread thread, Throwable ex) {
-		FileOutputStream writer = null;
+		Log.d(LOG_TAG, "Handling uncaught exception...");
+		
 		try {
-			writer = openFileOutput(LOG_FILE_NAME, Context.MODE_PRIVATE);
-			ex.printStackTrace(new PrintStream(writer));
-			writer.close();
-			
-		}  catch(Exception e){
+			AlrightManager.handleApplicationError(this.getBaseContext(), ex);
+		} catch(Exception e) {
 			// DO NOTHING
 		} // end try-catch
 	}
-	
 } // end AlrightApplication
