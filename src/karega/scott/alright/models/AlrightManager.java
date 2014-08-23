@@ -4,6 +4,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import android.app.AlertDialog;
@@ -23,6 +25,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 
+import android.util.ArrayMap;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
@@ -64,6 +67,13 @@ public class AlrightManager implements
 	public final static int TURN_DIRECTION_LEFT = 0;
 	public final static int TURN_DIRECTION_RIGHT = 1;
 
+	private final static int LOCATION_PROXIMITY_BUFFER = 3;
+	
+	private final static int ANGLE_BUFFER_SIZE = 5;
+	private final static int ANGLE_0 = 0;
+	private final static int ANGLE_90 = 90;
+	private final static int ANGLE_180 = 180;
+	
 	private long LOCATION_UPDATE_REQUESTS_TIME_IN_MINUTES = 0;
 	private float LOCATION_UPDATES_REQUEST_DISTANCE_IN_METERS = 0.914f; // 1
 																		// yard;
@@ -76,6 +86,9 @@ public class AlrightManager implements
 	private Sensor sensorAccelerometer;
 	private Sensor sensorMagneticField;
 
+	private ArrayList<String> compassHeadings = new ArrayList<String>();
+	private StringBuilder currentDirection = new StringBuilder();
+	
 	private float[] valuesForAccelerometer = null;
 	private float[] valuesForMagneticField = null;
 
@@ -97,6 +110,7 @@ public class AlrightManager implements
 		public final float Axis_Y_Roll;
 		public final float Axis_Z_Heading;
 		public final boolean useDegrees;
+		public final String Direction;
 		
 		public TrackingDetails(String providerName, float zHeading,	float xPitch, float yRoll) {
 			this(providerName, zHeading, xPitch, yRoll, true);
@@ -114,6 +128,8 @@ public class AlrightManager implements
 				this.Axis_Y_Roll = yRoll;
 				this.Axis_Z_Heading = zHeading;
 			}
+			
+			this.Direction = AlrightManager.headingToCompassValue(this.Axis_Z_Heading);
 		}	
 
 		@Override
@@ -123,9 +139,52 @@ public class AlrightManager implements
 			builder.append(String.format("Pitch (X): %s, ", this.Axis_X_Pitch));
 			builder.append(String.format("Roll (Y): %s, ", this.Axis_Y_Roll));
 			builder.append(String.format("Heading (Z): %s", this.Axis_Z_Heading));
+			builder.append(String.format("Direction: %s", this.Direction));
+			
 			return builder.toString();
-		}
+		}		
 	} // end TrackingDetails
+
+	/*
+	 * Converts the Magnetic Field Sensor heading to compass string value
+	 */
+	private static String headingToCompassValue(float axis_z_Heading) {
+		int heading = (int)axis_z_Heading;
+
+		// NORTH is heading >= -5 and heading <= 5
+		if((heading >= AlrightManager.ANGLE_0-AlrightManager.ANGLE_BUFFER_SIZE) && 
+				(heading <= AlrightManager.ANGLE_0+AlrightManager.ANGLE_BUFFER_SIZE)) return "N";
+		
+		// NORTH EAST is heading > 5 and heading < 85
+		if((heading > AlrightManager.ANGLE_0+AlrightManager.ANGLE_BUFFER_SIZE) && 
+				   (heading < AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE)) return "NE";
+		
+		// EAST is heading >= 85 and heading <= 95
+		if((heading >= AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE) && 
+				   (heading <= AlrightManager.ANGLE_90+AlrightManager.ANGLE_BUFFER_SIZE)) return "E";
+		
+		// SOUTH EAST is heading > 95 and heading < 175
+		if((heading > AlrightManager.ANGLE_90+AlrightManager.ANGLE_BUFFER_SIZE) && 
+				   (heading < AlrightManager.ANGLE_180-AlrightManager.ANGLE_BUFFER_SIZE)) return "SE";
+		
+		// SOUTH is heading <= -175 or heading >= 175
+		if((heading <= (AlrightManager.ANGLE_180-AlrightManager.ANGLE_BUFFER_SIZE)*-1) || 
+				   (heading <= AlrightManager.ANGLE_180+AlrightManager.ANGLE_BUFFER_SIZE)) return "S";
+
+		// NORTH WEST is heading > -85 and heading < -5
+		if((heading > AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE*-1) &&
+				(heading < AlrightManager.ANGLE_0-AlrightManager.ANGLE_BUFFER_SIZE)) return "NW";
+		
+		// WEST is heading >=-95 and heading <= -85
+		if((heading >= (AlrightManager.ANGLE_90+AlrightManager.ANGLE_BUFFER_SIZE)*-1) &&
+				(heading <= (AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE)*-1)) return "W";
+		
+		// SOUTH WEST is heading < -95 and heading >= -175
+		if((heading < (AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE)*-1) &&
+				(heading > (AlrightManager.ANGLE_180-AlrightManager.ANGLE_BUFFER_SIZE)*-1)) return "SW";
+
+		return "@#$#%";
+	} // end headingToCompassValue
 
 	/**
 	 * Details related to the current state of AlrightManager
@@ -156,6 +215,16 @@ public class AlrightManager implements
 	private AlrightManager(Context context) {
 		Log.d(LOG_TAG, "Constructor...");
 		this.context = context;
+		
+		this.compassHeadings.add("N");
+		this.compassHeadings.add("NE");
+		this.compassHeadings.add("E");
+		this.compassHeadings.add("SE");
+		this.compassHeadings.add("S");
+		this.compassHeadings.add("SW");
+		this.compassHeadings.add("W");
+		this.compassHeadings.add("NW");
+		
 	} // end constructor
 
 	/**
@@ -371,6 +440,10 @@ public class AlrightManager implements
 		this.startLocationUpdateRequests();
 		
 		this.setMyLastKnownLocation();
+		
+		if(this.turnDirection == AlrightManager.TURN_DIRECTION_LEFT) {
+			Collections.reverse(this.compassHeadings);
+		}
 		
 		this.handleManagerStateChange(new ManagerState(STATE_TYPE_GAME_STARTED,
 				"Game started"));
@@ -651,7 +724,17 @@ public class AlrightManager implements
 	public void onLocationChanged(Location location) {
 		Log.d(LOG_TAG, String.format("Location changed to %s", location));
 
-		// TODO: Check if we reached our destination
+		// NOTE: Should we handle this using LocationManager.addProximityAlert()
+//		if(location.getLatitude() >= this.myDestination.getLatitude()-AlrightManager.LOCATION_PROXIMITY_BUFFER &&
+//				location.getLatitude() <= this.myDestination.getLatitude()+AlrightManager.LOCATION_PROXIMITY_BUFFER &&
+//				location.getLongitude() >= this.myDestination.getLongitude()-AlrightManager.LOCATION_PROXIMITY_BUFFER &&
+//				location.getLongitude() <= this.myDestination.getLongitude()+AlrightManager.LOCATION_PROXIMITY_BUFFER) {			
+//		}
+		
+		if(location.getLatitude() == this.myDestination.getLatitude() && 
+			location.getLongitude() == this.myDestination.getLongitude()) {
+			this.handleManagerStateChange(new ManagerState(AlrightManager.STATE_TYPE_GAME_OVER_WINNER, "YOU WIN!"));
+		}
 	}
 
 	@Override
@@ -742,10 +825,25 @@ public class AlrightManager implements
 			String locationProvider = this.getBestProviderForLocationUpdates();
 			TrackingDetails trackingDetails = new TrackingDetails(locationProvider, 
 					values[0 /*AXIS_Z*/], values[1/*AXIS_X*/], values[2/*AXIS_Y*/]);
+
+			if(this.currentDirection.length() == 0) {
+				this.currentDirection = new StringBuilder(trackingDetails.Direction);
+				return;
+			}
 			
-			// TODO: Determine if player still on track
-			this.handleManagerStateChange(new ManagerState(
-					AlrightManager.STATE_TYPE_STILL_ON_TRACK, trackingDetails));
+			int stateType = AlrightManager.STATE_TYPE_STILL_ON_TRACK;
+			if(!this.currentDirection.toString().equalsIgnoreCase(trackingDetails.Direction)) {	
+				// Get index of next possible direction
+				int index = this.compassHeadings.indexOf(this.currentDirection)+1;
+				index = (index < this.compassHeadings.size())? index: 0;
+				
+				// Did you make a wrong turn?
+				if(!this.compassHeadings.get(index).equalsIgnoreCase(trackingDetails.Direction)){
+					stateType = AlrightManager.STATE_TYPE_GAME_OVER_LOSER;					
+				}
+			} // end if
+			
+			this.handleManagerStateChange(new ManagerState(stateType, trackingDetails));
 		} // end if
 	}
 

@@ -101,7 +101,14 @@ public class LocationTrackerActivity extends AlrightBaseActivity {
 		Log.d(LOG_TAG, String.format("Tracking Detals: %s", data));
 
 		if(/* TODO: Debug Only */ true) {
-			this.summary.setText(String.format("%s\n", data));
+			StringBuilder builder = new StringBuilder();
+			builder.append(String.format("Provider:    %s\n", data.Provider));
+			builder.append(String.format("Direction:    %s\n", data.Direction));
+			builder.append(String.format("Pitch (X):   %s\n", data.Axis_X_Pitch));
+			builder.append(String.format("Roll (Y):    %s\n", data.Axis_Y_Roll));
+			builder.append(String.format("Heading (Z): %s\n", data.Axis_Z_Heading));
+			
+			this.summary.setText(builder.toString());
 		}
 	} // end showTrackingDetails
 } // end GameActivity
