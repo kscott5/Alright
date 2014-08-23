@@ -37,7 +37,7 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 	OnSuggestionListener,
 	OnQueryTextListener
 {
-	private final static String LOG_TAG ="Game Setup Activity";
+	private final static String LOG_TAG ="Alright Game Setup Activity";
 
 	private ActionBar actionBar;
 	private GoogleMap map;
@@ -88,9 +88,8 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 			
 			this.map.setMyLocationEnabled(true);
 		} // end if
-
 		
-		this.manager.connect();
+		this.manager.newGame();
 	} // end init
 	
 	@Override
@@ -130,6 +129,7 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 	    searchView.setOnSuggestionListener(this);
 	    searchView.setOnQueryTextListener(this);
 	    searchView.setOnCloseListener(this);
+	    searchView.setOnSearchClickListener(this);
 	    
 		return super.onCreateOptionsMenu(menu);
 	}
@@ -163,6 +163,9 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 			
 			case R.id.game_mydestination_textbox:
 				this.actionBar.show();
+				break;
+			case R.id.search:
+				;
 				break;
 		}				
 	}

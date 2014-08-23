@@ -9,7 +9,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 public class HelpActivity extends AlrightBaseActivity {
-	private final static String LOG_TAG = "Help Activity";
+	private final static String LOG_TAG = "Alright Help Activity";
 	private ActionBar actionBar;
 	
 	@Override

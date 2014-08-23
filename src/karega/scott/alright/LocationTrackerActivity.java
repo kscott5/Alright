@@ -11,6 +11,7 @@ import karega.scott.alright.models.AlrightManager;
 import karega.scott.alright.models.AlrightManager.ManagerState;
 import karega.scott.alright.models.AlrightManager.TrackingDetails;
 import android.location.Address;
+import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -22,7 +23,7 @@ import android.widget.TextView;
  * Activity used for actual game play
  */
 public class LocationTrackerActivity extends AlrightBaseActivity {
-	private final static String LOG_TAG ="Location Tracker Activity";
+	private final static String LOG_TAG ="Alright Location Tracker Activity";
 
 	private GoogleMap map;
 	private TextView summary;
@@ -34,18 +35,17 @@ public class LocationTrackerActivity extends AlrightBaseActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_location_tracker);
 		
-		this.summary = (TextView)this.findViewById(R.id.location_tracker_summary);
-		this.summary.setText("");
+		// NOTE: Not for production use
+		if(Log.isLoggable(LOG_TAG, Log.DEBUG)) {
+			this.summary = (TextView)this.findViewById(R.id.location_tracker_summary);
+			this.summary.setText("");
+			
+			this.map = ((MapFragment) getFragmentManager().findFragmentById(
+						R.id.location_tracker_map)).getMap();
+	
+			this.map.setMyLocationEnabled(true);
+		}
 		
-		this.map = ((MapFragment) getFragmentManager().findFragmentById(
-					R.id.location_tracker_map)).getMap();
-
-		this.map.setMyLocationEnabled(true);
-		
-		Address address = this.manager.getMyCurrentLocation();
-		LatLng latlng = new LatLng(address.getLatitude(), address.getLongitude());		
-		this.map.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 12.0f));
-
 		this.manager.startGame();
 	}
 
@@ -71,17 +71,18 @@ public class LocationTrackerActivity extends AlrightBaseActivity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
-
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-	}
 	
 	@Override
 	protected void onAlrightBaseActivityStateChanged(ManagerState state) {
 		Log.d(LOG_TAG, "Handling base activity state changes...");
 
 		switch(state.stateType) {
+			case AlrightManager.STATE_TYPE_MY_LOCATION:
+				Address address = (Address)state.stateData;
+				LatLng latlng = new LatLng(address.getLatitude(), address.getLongitude());		
+				this.map.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 12.0f));
+				break;
+				
 			case AlrightManager.STATE_TYPE_STILL_ON_TRACK:
 				this.showTrackingDetails(state.stateData);
 				break;
@@ -100,6 +101,6 @@ public class LocationTrackerActivity extends AlrightBaseActivity {
 			return;
 		
 		TrackingDetails details = (TrackingDetails)data;
-		this.summary.setText(String.format("%s\nBearing %s\n", details.provider, details.bearing));		
+		this.summary.setText(String.format("%s\n", details));		
 	}
 } // end GameActivity
