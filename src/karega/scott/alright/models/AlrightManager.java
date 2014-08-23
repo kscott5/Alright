@@ -60,7 +60,6 @@ public class AlrightManager implements
 	public final static int STATE_TYPE_STILL_ON_TRACK = 6;
 	public final static int STATE_TYPE_GAME_OVER_LOSER = 7;
 	public final static int STATE_TYPE_GAME_OVER_WINNER = 8;
-	public final static int STATE_TYPE_ORIENTATION_CHANGED = 9;
 
 	public final static int TURN_DIRECTION_LEFT = 0;
 	public final static int TURN_DIRECTION_RIGHT = 1;
@@ -690,7 +689,7 @@ public class AlrightManager implements
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		Log.d(LOG_TAG, String.format("Sensor changed for: %s", event.sensor.getName()));
+		// Log.d(LOG_TAG, String.format("Sensor changed for: %s", event.sensor.getName()));
 
 		switch (event.sensor.getType()) {
 		case Sensor.TYPE_ACCELEROMETER:
@@ -744,8 +743,9 @@ public class AlrightManager implements
 			TrackingDetails trackingDetails = new TrackingDetails(locationProvider, 
 					values[0 /*AXIS_Z*/], values[1/*AXIS_X*/], values[2/*AXIS_Y*/]);
 			
+			// TODO: Determine if player still on track
 			this.handleManagerStateChange(new ManagerState(
-					AlrightManager.STATE_TYPE_ORIENTATION_CHANGED, trackingDetails));
+					AlrightManager.STATE_TYPE_STILL_ON_TRACK, trackingDetails));
 		} // end if
 	}
 

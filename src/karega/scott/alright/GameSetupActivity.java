@@ -26,6 +26,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 
 /*
@@ -72,9 +74,13 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 	
 		this.myDestinationText = (TextView)this.findViewById(R.id.game_mydestination_textbox);
 		this.myDestinationText.setOnClickListener(this);
+		
 	
 		this.myLocationIcon = (ImageView)this.findViewById(R.id.game_mylocation_icon);
 		this.myLocationIcon.requestFocus();
+		
+		InputMethodManager ime = (InputMethodManager)this.getSystemService(INPUT_METHOD_SERVICE);
+		ime.hideSoftInputFromInputMethod(this.myDestinationText.getWindowToken(), InputMethodManager.HIDE_IMPLICIT_ONLY);
 		
 		this.myDestinationIcon = (ImageView)this.findViewById(R.id.game_mydestination_icon);
 
@@ -178,7 +184,6 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 		this.manager.setTurnDirection(turnDirection);
 		
 		Intent intent = new Intent(this, LocationTrackerActivity.class);
-		intent = new Intent(this, LocationTrackerActivity.class);
 		this.startActivity(intent);
 	} // end startGameLocationTracker
 	

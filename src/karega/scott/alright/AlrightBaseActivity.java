@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -30,21 +31,37 @@ public abstract class AlrightBaseActivity extends Activity implements
 	 * Intercepts the following STATE_TYPES <br/>
 	 * <br/>
 	 *  AlrightManager.STATE_TYPE_ERROR<br/>
-	 *  AlrightManager.STATE_TYPE_ORIENTATION_CHANGED<br/>
+	 *  AlrightManager.STATE_TYPEG_GAME_OVER_LOSER<br/>
+	 *  AlrightManager.STATE_TYPEG_GAME_OVER_WINNER<br/>
 	 *  <br/>
 	 * @param state
 	 */
 	public final void onManagerStateChanged(ManagerState state) {
 		Log.d(LOG_TAG, "Handling manager state changed event...");
-		if(AlrightManager.STATE_TYPE_ERROR == state.stateType) {
-			AlertDialog.Builder builder = new AlertDialog.Builder(this.getBaseContext());
-			builder.setMessage(state.stateData.toString()).setPositiveButton("OK", this).show();
-			return;
-		}
 		
-		if(AlrightManager.STATE_TYPE_ORIENTATION_CHANGED == state.stateType) {
-			Log.d(LOG_TAG, String.format("Orientation changed: %s\n", (AlrightManager.TrackingDetails)state.stateData));
-		}
+		switch(state.stateType) {
+			case AlrightManager.STATE_TYPE_ERROR: {
+				AlertDialog.Builder builder = new AlertDialog.Builder(this.getBaseContext());
+				builder.setMessage(state.stateData.toString()).setPositiveButton("OK", this).show();
+				return;
+			}
+			
+			case AlrightManager.STATE_TYPE_GAME_OVER_LOSER: {
+				// TODO: Display dialog for game loser
+			
+				Intent intent = new Intent(this.getBaseContext(), GameSetupActivity.class);
+				this.startActivity(intent);
+				return;
+			}
+			
+			case AlrightManager.STATE_TYPE_GAME_OVER_WINNER: {
+				// TODO: Display dialog for game winner
+				
+				Intent intent = new Intent(this.getBaseContext(), GameSetupActivity.class);
+				this.startActivity(intent);
+				return;			
+			}
+		} //end switch
 		
 		this.onAlrightBaseActivityStateChanged(state);
 	} // end onManagerStateChanged

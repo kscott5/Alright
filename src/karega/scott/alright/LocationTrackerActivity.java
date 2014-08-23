@@ -23,7 +23,8 @@ import android.widget.TextView;
  * Activity used for actual game play
  */
 public class LocationTrackerActivity extends AlrightBaseActivity {
-	private final static String LOG_TAG ="Alright Location Tracker Activity";
+	// NOTE: LOG_TAG should not exceed 23 characters! ;-)
+	private final static String LOG_TAG ="Alright Tracker Activit";
 
 	private GoogleMap map;
 	private TextView summary;
@@ -36,7 +37,7 @@ public class LocationTrackerActivity extends AlrightBaseActivity {
 		setContentView(R.layout.activity_location_tracker);
 		
 		// NOTE: Not for production use
-		if(Log.isLoggable(LOG_TAG, Log.DEBUG)) {
+		if(/* TODO: Debug Only*/ true) {
 			this.summary = (TextView)this.findViewById(R.id.location_tracker_summary);
 			this.summary.setText("");
 			
@@ -84,23 +85,23 @@ public class LocationTrackerActivity extends AlrightBaseActivity {
 				break;
 				
 			case AlrightManager.STATE_TYPE_STILL_ON_TRACK:
-				this.showTrackingDetails(state.stateData);
+				this.showTrackingDetails((TrackingDetails)state.stateData);
 				break;
 				
 			case AlrightManager.STATE_TYPE_GAME_STARTED:				
 				break;
+							
 		}
 	}
 	
 	/*
 	 * Shows the tracking details 
 	 */
-	private void showTrackingDetails(Object data) {
-		// TODO: Check Log.Debug level to prevent this in release
-		if(data == null)
-			return;
-		
-		TrackingDetails details = (TrackingDetails)data;
-		this.summary.setText(String.format("%s\n", details));		
-	}
+	private void showTrackingDetails(TrackingDetails data) {
+		Log.d(LOG_TAG, String.format("Tracking Detals: %s", data));
+
+		if(/* TODO: Debug Only */ true) {
+			this.summary.setText(String.format("%s\n", data));
+		}
+	} // end showTrackingDetails
 } // end GameActivity
