@@ -96,6 +96,8 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 	protected void onNewIntent(Intent intent) {
 		Log.d(LOG_TAG, "New intent initiated...");
 
+		super.onNewIntent(intent);
+		
 		if( intent.getAction().equals(AlrightManager.ACTION_LOCATION_SUGGESTION) || intent.getAction().equals(Intent.ACTION_SEARCH)) {
 			String query = intent.getStringExtra(SearchManager.QUERY);
 			this.manager.setMyDestination(query);
@@ -129,7 +131,6 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 	    searchView.setOnSuggestionListener(this);
 	    searchView.setOnQueryTextListener(this);
 	    searchView.setOnCloseListener(this);
-	    searchView.setOnSearchClickListener(this);
 	    
 		return super.onCreateOptionsMenu(menu);
 	}
@@ -163,9 +164,6 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 			
 			case R.id.game_mydestination_textbox:
 				this.actionBar.show();
-				break;
-			case R.id.search:
-				;
 				break;
 		}				
 	}
@@ -273,7 +271,7 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 	@Override
 	public boolean onQueryTextSubmit(String query) {
 		this.queryText = query;
-		return true;
+		return false;
 	}
 
 	@Override
