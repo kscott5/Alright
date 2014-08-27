@@ -1,6 +1,7 @@
 package karega.scott.alright;
 
 
+import karega.scott.alright.models.AlrightManager;
 import karega.scott.alright.models.AlrightManager.ManagerState;
 import android.app.Activity;
 import android.content.Intent;
@@ -20,8 +21,10 @@ import android.util.Log;
  * @author kscott
  *
  */
-public class MainActivity extends AlrightBaseActivity implements OnClickListener {
-	private final static String LOG_TAG = "Alright Main Activity";
+public class MainActivity extends AlrightBaseActivity implements 
+	OnClickListener 
+{
+	private final static String LOG_TAG = "Main";
 
 	private ActionBar actionBar;
 	
@@ -57,27 +60,43 @@ public class MainActivity extends AlrightBaseActivity implements OnClickListener
 	@Override
 	public void onClick(View v) {
 		Log.d(LOG_TAG, "Starting child activity");
-		
-		Intent intent = null;
-		
+				
 		switch(v.getId()) {		
 			case R.id.new_game:
-				intent = new Intent(this, GameSetupActivity.class);
+				Intent setup = new Intent(this, GameSetupActivity.class);
+				this.startActivityForResult(setup, this.RESULT_OK);
 				break;
+				
 			case R.id.help_game:
-				intent = new Intent(this, HelpActivity.class);
+				Intent help = new Intent(this, HelpActivity.class);
+				this.startActivityForResult(help, this.RESULT_OK);
 				break;
-		}
-		
-		if(intent != null) {
-			this.startActivity(intent);
 		}
 	} // end onClick
 
-	@Override
-	protected void onAlrightBaseActivityStateChanged(ManagerState state) {
-		Log.d(LOG_TAG, "Handling base activity state changes...");
-	
+	public void onManagerStateChanged(ManagerState state) {
+		Log.d(LOG_TAG, "Handling manager state changes...");
+		
+		switch(state.stateType){
+			case AlrightManager.STATE_TYPE_GAME_SETUP_COMPLETE:
+				this.finishActivity(RESULT_OK);
+				
+				Intent tracker = new Intent(this, LocationTrackerActivity.class);
+				this.startActivity(tracker);
+				break;
+				
+			case AlrightManager.STATE_TYPE_ERROR:
+				// TODO: Show DialogFragment
+				break;
+			
+			case AlrightManager.STATE_TYPE_GAME_OVER_LOSER:
+				// TODO: Show DialogFragment
+				break;
+				
+			case AlrightManager.STATE_TYPE_GAME_OVER_WINNER:
+				// TODO: Show DialogFragment
+				break;
+		}
 	}
 } // end MainActivity
 

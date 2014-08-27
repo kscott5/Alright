@@ -9,7 +9,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 public class HelpActivity extends AlrightBaseActivity {
-	private final static String LOG_TAG = "Alright Help Activity";
+	private final static String LOG_TAG = "Help";
 	private ActionBar actionBar;
 	
 	@Override
@@ -48,9 +48,7 @@ public class HelpActivity extends AlrightBaseActivity {
 		return super.onOptionsItemSelected(item);
 	}
 
-	@Override
-	protected void onAlrightBaseActivityStateChanged(ManagerState state) {
-		Log.d(LOG_TAG, "Handling base activity state changes...");
-		
+	public void onManagerStateChanged(ManagerState state) {
+		// DO NOTHING
 	}
 } // end HelpActivity

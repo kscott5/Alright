@@ -39,7 +39,7 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 	OnSuggestionListener,
 	OnQueryTextListener
 {
-	private final static String LOG_TAG ="Alright Game Setup Activity";
+	private final static String LOG_TAG ="GameSetup";
 
 	private ActionBar actionBar;
 	private GoogleMap map;
@@ -99,25 +99,13 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 	} // end init
 	
 	@Override
-	protected void onNewIntent(Intent intent) {
-		Log.d(LOG_TAG, "New intent initiated...");
-
-		super.onNewIntent(intent);
-		
-		if( intent.getAction().equals(AlrightManager.ACTION_LOCATION_SUGGESTION) || intent.getAction().equals(Intent.ACTION_SEARCH)) {
-			String query = intent.getStringExtra(SearchManager.QUERY);
-			this.manager.setMyDestination(query);
-		}
-	}
-	
-	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		Log.d(LOG_TAG, "Create the activity");
 		
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_game_setup);
 		
-		this.init();
+		this.init();		
 	}
 
 	@Override
@@ -161,11 +149,11 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 		
 		switch(v.getId()) {
 			case R.id.game_card_buttons_left_textbox:
-				this.startGameLocationTracker(AlrightManager.TURN_DIRECTION_LEFT);
+				this.manager.completeGameSetup(/*onlyRightTurns*/ false);
 				break;
 			
 			case R.id.game_card_buttons_right_textbox:
-				this.startGameLocationTracker(AlrightManager.TURN_DIRECTION_RIGHT);
+				this.manager.completeGameSetup(/*onlyRightTurns*/ true);
 				break;
 			
 			case R.id.game_mydestination_textbox:
@@ -173,53 +161,35 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 				break;
 		}				
 	}
-	
-	/**
-	 * Starts the game for play
-	 * @param turnDirection
-	 */
-	private void startGameLocationTracker(int turnDirection) {
-		Log.d(LOG_TAG, "Start game location tracker");
-
-		this.manager.setTurnDirection(turnDirection);
 		
-		Intent intent = new Intent(this, LocationTrackerActivity.class);
-		this.startActivity(intent);
-	} // end startGameLocationTracker
-	
-	@Override
-	protected void onAlrightBaseActivityStateChanged(ManagerState state) {
-		Log.d(LOG_TAG, "Handling base activity state changes...");
+	public void onManagerStateChanged(ManagerState state) {
+		Log.d(LOG_TAG, "Handling manager state changes...");
 		
 		this.actionBar.hide();
 		
-		Bitmap bm;
 		switch(state.stateType) {
-			case AlrightManager.STATE_TYPE_SUCCESS:
-				break;
-				
 			case AlrightManager.STATE_TYPE_NEW_GAME:
-				bm = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_directions_form_destination_notselected);
-				this.myDestinationIcon.setImageBitmap(bm);
+				Bitmap bitmapNotSelected = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_directions_form_destination_notselected);
+				this.myDestinationIcon.setImageBitmap(bitmapNotSelected);
 				this.myDestinationText.setText("");
 				break;
 			
 			case AlrightManager.STATE_TYPE_MY_LOCATION:				
-				bm = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_directions_form_mylocation);
-				this.myLocationIcon.setImageBitmap(bm);
+				Bitmap bitmapMyLocation = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_directions_form_mylocation);
+				this.myLocationIcon.setImageBitmap(bitmapMyLocation);
 				
 				this.animateCamera((Address)state.stateData, false, null, 0);
 				break;
 				
 			case AlrightManager.STATE_TYPE_DESTINATION_CHANGED:
-				bm = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_directions_form_startpoint);
-				this.myDestinationIcon.setImageBitmap(bm);
+				Bitmap bitmapStartPoint = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_directions_form_startpoint);
+				this.myDestinationIcon.setImageBitmap(bitmapStartPoint);
 				this.myDestinationText.setText(AlrightManager.addressToString((Address)state.stateData));
 				this.animateCamera((Address)state.stateData, true, "Your destination", BitmapDescriptorFactory.HUE_VIOLET);
 				
 				this.gameCardButtonsRight.setOnClickListener(this);
 				this.gameCardButtonsLeft.setOnClickListener(this);
-				break;
+				break;				
 		}
 	} 
 	
@@ -236,6 +206,8 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 		LatLng latlng = new LatLng(address.getLatitude(), address.getLongitude());
 		
 		if(addMarker) {
+			this.map.clear();
+			
 			MarkerOptions options = new MarkerOptions().position(latlng)
 					.title(title)
 					.icon(BitmapDescriptorFactory.defaultMarker(hue));
@@ -247,18 +219,7 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 
 	@Override
 	public boolean onSuggestionClick(int position) {
-		this.queryText = AlrightManager.addressToString(this.manager.getAddress(queryText, position));
-		if(this.queryText == null)
-			return false;
-		
-		// TODO: Review this code. Should position be included on content uri.
-		// For instance String query = String.format("content://karega.scott.alright.provider/suggestion_query/%s ?", position);
-		Intent intent = new Intent(this, GameSetupActivity.class);
-		
-		intent.setAction(AlrightManager.ACTION_LOCATION_SUGGESTION);
-		intent.putExtra(SearchManager.QUERY, this.queryText);
-		
-		this.startActivity(intent);
+		this.manager.setMyDestination(this.queryText, position);
 		return true;
 	}
 
@@ -270,13 +231,13 @@ public class GameSetupActivity extends AlrightBaseActivity implements
 	@Override
 	public boolean onQueryTextChange(String newText) {
 		this.queryText = newText;
-		return true;
+		return false;
 	}
 
 	@Override
 	public boolean onQueryTextSubmit(String query) {
-		this.queryText = query;
-		return false;
+		this.manager.setMyDestination(query);
+		return true;
 	}
 
 	@Override

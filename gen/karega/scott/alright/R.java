@@ -476,7 +476,7 @@ containing a value of this type.
         public static final int powered_by_google_light=0x7f020030;
     }
     public static final class id {
-        public static final int action_settings=0x7f08002a;
+        public static final int action_settings=0x7f08002b;
         public static final int book_now=0x7f080010;
         public static final int button=0x7f080016;
         public static final int buyButton=0x7f08000a;
@@ -498,22 +498,23 @@ containing a value of this type.
         public static final int game_mylocation_textbox=0x7f08001c;
         public static final int grayscale=0x7f080012;
         public static final int helpWebView=0x7f080025;
-        public static final int help_game=0x7f080029;
+        public static final int help_game=0x7f08002a;
         public static final int holo_dark=0x7f080005;
         public static final int holo_light=0x7f080006;
         public static final int hybrid=0x7f080004;
         public static final int image=0x7f080018;
-        public static final int location_tracker_map=0x7f080026;
-        public static final int location_tracker_summary=0x7f080027;
+        public static final int location_tracker_container=0x7f080026;
+        public static final int location_tracker_container_map=0x7f080027;
+        public static final int location_tracker_container_summary=0x7f080028;
         public static final int match_parent=0x7f08000c;
         public static final int monochrome=0x7f080013;
-        public static final int new_game=0x7f080028;
+        public static final int new_game=0x7f080029;
         public static final int none=0x7f080000;
         public static final int normal=0x7f080001;
         public static final int production=0x7f080007;
         public static final int sandbox=0x7f080008;
         public static final int satellite=0x7f080002;
-        public static final int search=0x7f08002b;
+        public static final int search=0x7f08002c;
         public static final int selectionDetails=0x7f08000b;
         public static final int startgame_divider=0x7f080022;
         public static final int strict_sandbox=0x7f080009;

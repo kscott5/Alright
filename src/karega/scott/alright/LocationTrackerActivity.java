@@ -3,20 +3,17 @@ package karega.scott.alright;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import karega.scott.alright.models.AlrightManager;
 import karega.scott.alright.models.AlrightManager.ManagerState;
 import karega.scott.alright.models.AlrightManager.TrackingDetails;
 import android.location.Address;
-import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /*
@@ -24,10 +21,11 @@ import android.widget.TextView;
  */
 public class LocationTrackerActivity extends AlrightBaseActivity {
 	// NOTE: LOG_TAG should not exceed 23 characters! ;-)
-	private final static String LOG_TAG ="Alright Tracker Activit";
+	private final static String LOG_TAG ="LocationTracker";
 
-	private GoogleMap map;
-	private TextView summary;
+	private LinearLayout container;
+	private GoogleMap containerMap;
+	private TextView containerSummary;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -38,14 +36,16 @@ public class LocationTrackerActivity extends AlrightBaseActivity {
 		
 		// NOTE: Not for production use
 		if(/* TODO: Debug Only*/ true) {
-			this.summary = (TextView)this.findViewById(R.id.location_tracker_summary);
-			this.summary.setText("");
+			this.container = (LinearLayout)this.findViewById(R.id.location_tracker_container);
 			
-			this.map = ((MapFragment) getFragmentManager().findFragmentById(
-						R.id.location_tracker_map)).getMap();
+			this.containerSummary = (TextView)this.findViewById(R.id.location_tracker_container_summary);
+			this.containerSummary.setText("");
+			
+			this.containerMap = ((MapFragment) getFragmentManager().findFragmentById(
+						R.id.location_tracker_container_map)).getMap();
 	
-			this.map.setMyLocationEnabled(true);
-		}
+			this.containerMap.setMyLocationEnabled(true);
+		} // end Not for production use
 		
 		this.manager.startGame();
 	}
@@ -73,25 +73,22 @@ public class LocationTrackerActivity extends AlrightBaseActivity {
 		return super.onOptionsItemSelected(item);
 	}
 	
-	@Override
-	protected void onAlrightBaseActivityStateChanged(ManagerState state) {
-		Log.d(LOG_TAG, "Handling base activity state changes...");
+	public void onManagerStateChanged(ManagerState state) {
+		Log.d(LOG_TAG, "Handling manager state changes...");
 
 		switch(state.stateType) {
 			case AlrightManager.STATE_TYPE_MY_LOCATION:
 				Address address = (Address)state.stateData;
 				LatLng latlng = new LatLng(address.getLatitude(), address.getLongitude());		
-				this.map.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 12.0f));
+				this.containerMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 12.0f));
 				break;
 				
 			case AlrightManager.STATE_TYPE_STILL_ON_TRACK:
 				this.showTrackingDetails((TrackingDetails)state.stateData);
-				break;
-				
-			case AlrightManager.STATE_TYPE_GAME_STARTED:				
-				break;
-							
+				break;				
 		}
+		
+		this.container.invalidate();
 	}
 	
 	/*
@@ -102,13 +99,14 @@ public class LocationTrackerActivity extends AlrightBaseActivity {
 
 		if(/* TODO: Debug Only */ true) {
 			StringBuilder builder = new StringBuilder();
-			builder.append(String.format("Provider:    %s\n", data.Provider));
-			builder.append(String.format("Direction:    %s\n", data.Direction));
-			builder.append(String.format("Pitch (X):   %s\n", data.Axis_X_Pitch));
-			builder.append(String.format("Roll (Y):    %s\n", data.Axis_Y_Roll));
-			builder.append(String.format("Heading (Z): %s\n", data.Axis_Z_Heading));
+			builder.append(String.format("Provider:        %s\n", data.Provider));
+			builder.append(String.format("Direction:       %s\n", data.Direction));
+			builder.append(String.format("Direction Prev:  %s\n", data.Direction_Previous));
+			builder.append(String.format("Pitch (X):       %s\n", data.Pitch));
+			builder.append(String.format("Roll (Y):        %s\n", data.Roll));
+			builder.append(String.format("Heading (Z):     %s\n", data.Azimuth));
 			
-			this.summary.setText(builder.toString());
+			this.containerSummary.setText(builder.toString());
 		}
 	} // end showTrackingDetails
-} // end GameActivity
+} // end LocationTrackerActivity

@@ -3,21 +3,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     style="@style/GameInputPanelContent"
     android:orientation="vertical"
+    android:id="@+id/location_tracker_container"
     tools:context="karega.scott.alright.LocationTrackerActivity" >
     
     <LinearLayout android:orientation="vertical" android:id="@+id/game_card_summary" style="@style/Container" android:layout_height="fill_parent">        
         <fragment
-		  android:id="@+id/location_tracker_map"
+		  android:id="@+id/location_tracker_container_map"
 		  android:layout_width="match_parent"
 		  android:layout_height="@dimen/game_tripcard_summary_map_height"
 		  android:name="com.google.android.gms.maps.MapFragment"/> 
 	
         <TextView
-            android:id="@+id/location_tracker_summary"
+            android:id="@+id/location_tracker_container_summary"
             style="@style/MediumText"
             android:layout_width="match_parent"
             android:layout_height="214dp"
-            android:lines="5"
+            android:lines="6"
             android:scrollHorizontally="false"
             android:scrollbars="vertical"
             android:text="@string/PLACE_HOLDER_TEXT"
