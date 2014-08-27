@@ -21,7 +21,7 @@ import android.util.Log;
  *
  */
 public class AlrightProvider extends ContentProvider {
-	private final static String LOG_TAG = "Alright Content Provider";
+	private final static String LOG_TAG = "AlrightProvider";
 	
     // List of possible content provider uri. Add more as needed
     private final static String CONTENT_PATH = "geocoder";

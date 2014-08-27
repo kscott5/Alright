@@ -5,10 +5,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.SearchManager;
 import android.content.Context;
@@ -24,12 +22,11 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Parcel;
+import android.os.Parcelable;
 
-import android.util.ArrayMap;
 import android.util.Log;
-import android.view.Display;
-import android.view.Surface;
-import android.view.WindowManager;
 
 /**
  * Manages the interaction with various Android and Google Services
@@ -42,7 +39,7 @@ public class AlrightManager implements
 	SensorEventListener,
 	DialogInterface.OnClickListener
 {
-	private final static String LOG_TAG = "Alright Manager";
+	private final static String LOG_TAG = "AlrightManager";
 	private final static String LOG_FILE_NAME = "alright.log";
 		
 	public final static String ACTION_LOCATION_SUGGESTION = "karega.scott.alright.action.LOCATION_SUGGESTION";
@@ -53,6 +50,7 @@ public class AlrightManager implements
 	public final static int MAX_RESULTS = 10;
 	public final static int MIN_RESULTS = 1;
 
+	public final static int STATE_TYPE_WARNING = -2;
 	public final static int STATE_TYPE_ERROR = -1;
 	public final static int STATE_TYPE_SUCCESS = 0;
 	public final static int STATE_TYPE_NEW_GAME = 1;
@@ -60,38 +58,35 @@ public class AlrightManager implements
 	public final static int STATE_TYPE_MY_LOCATION = 3;
 	public final static int STATE_TYPE_DESTINATION_CHANGED = 4;
 	public final static int STATE_TYPE_GAME_STARTED = 5;
-	public final static int STATE_TYPE_STILL_ON_TRACK = 6;
-	public final static int STATE_TYPE_GAME_OVER_LOSER = 7;
-	public final static int STATE_TYPE_GAME_OVER_WINNER = 8;
+	public final static int STATE_TYPE_GAME_SETUP_COMPLETE = 6;
+	public final static int STATE_TYPE_STILL_ON_TRACK = 7;
+	public final static int STATE_TYPE_GAME_OVER_LOSER = 8;
+	public final static int STATE_TYPE_GAME_OVER_WINNER = 9;
 
 	public final static int TURN_DIRECTION_LEFT = 0;
 	public final static int TURN_DIRECTION_RIGHT = 1;
 
-	private final static int LOCATION_PROXIMITY_BUFFER = 3;
-	
-	private final static int ANGLE_BUFFER_SIZE = 5;
 	private final static int ANGLE_0 = 0;
 	private final static int ANGLE_90 = 90;
 	private final static int ANGLE_180 = 180;
+	private final static int ANGLE_270 = 270;
+	private final static int ANGLE_360 = 360;
 	
 	private long LOCATION_UPDATE_REQUESTS_TIME_IN_MINUTES = 0;
 	private float LOCATION_UPDATES_REQUEST_DISTANCE_IN_METERS = 0.914f; // 1
 																		// yard;
-	private int turnDirection = TURN_DIRECTION_RIGHT;
+	private boolean onlyRightTurns = false;
 	private boolean isConnected = false;
-
-	private LocationManager locationManager;
-
-	private SensorManager sensorManager;
-	private Sensor sensorAccelerometer;
-	private Sensor sensorMagneticField;
-
-	private ArrayList<String> compassHeadings = new ArrayList<String>();
-	private StringBuilder currentDirection = new StringBuilder();
 	
-	private float[] valuesForAccelerometer = null;
-	private float[] valuesForMagneticField = null;
-
+	private LocationManager locationManager;
+	private String locationProvider;
+	
+	private SensorManager sensorManager;
+	private Sensor sensorOrientation; // Yes, I know its depreciated but there's a reason for most things
+	
+	private ArrayList<String> compassHeadings = new ArrayList<String>();
+	private String currentDirection = null;
+	
 	private Context context;
 	private Address myDestination;
 
@@ -99,38 +94,37 @@ public class AlrightManager implements
 	private static ArrayList<ManagerStateListener> stateListener = new ArrayList<ManagerStateListener>();
 	private static AlrightManager manager;
 	
-	/**
-	 * Details related to the Magnetic Field Sensor
-	 * @author kscott
-	 *
-	 */
-	public class TrackingDetails {
+	public static class TrackingDetails implements Parcelable {
 		public final String Provider;
-		public final float Axis_X_Pitch;
-		public final float Axis_Y_Roll;
-		public final float Axis_Z_Heading;
-		public final boolean useDegrees;
+		
+		/*
+		 *  Sensor.TYPE_ORIENTATION all values are angles in degrees.
+		 *  Does this mean we need to Math.toDegrees these values?
+		 */
+		public final float Pitch; // x
+		public final float Roll; // y
+		public final float Azimuth; // z
+		
 		public final String Direction;
 		public final String Direction_Previous;
 		
-		public TrackingDetails(String providerName, float zHeading,	float xPitch, float yRoll, String previousDirection) {
-			this(providerName, zHeading, xPitch, yRoll, previousDirection, true);
+		private TrackingDetails(Parcel in) {
+			this.Provider = in.readString();
+			this.Pitch = in.readFloat();
+			this.Roll = in.readFloat();
+			this.Azimuth = in.readFloat();
+			this.Direction = in.readString();
+			this.Direction_Previous = in.readString();
 		}
-		
-		public TrackingDetails(String providerName, float zHeading,	float xPitch, float yRoll, String previousDirection, boolean useDegrees) {
+				
+		public TrackingDetails(String providerName, float zAzimuth,	float xPitch, float yRoll, String previousDirection) {
 			this.Provider = providerName;
 			
-			if(this.useDegrees = useDegrees) {
-				this.Axis_X_Pitch = (float)Math.toDegrees(xPitch);
-				this.Axis_Y_Roll = (float)Math.toDegrees(yRoll);
-				this.Axis_Z_Heading = (float)Math.toDegrees(zHeading);
-			} else {
-				this.Axis_X_Pitch = xPitch;
-				this.Axis_Y_Roll = yRoll;
-				this.Axis_Z_Heading = zHeading;
-			}
+			this.Pitch =  xPitch;
+			this.Roll = yRoll;
+			this.Azimuth = zAzimuth;
 			
-			this.Direction = AlrightManager.headingToCompassValue(this.Axis_Z_Heading);
+			this.Direction = AlrightManager.computeCompassDirection(this.Azimuth);
 			this.Direction_Previous = previousDirection;
 		}	
 
@@ -138,55 +132,80 @@ public class AlrightManager implements
 		public String toString() {
 			StringBuilder builder = new StringBuilder();
 			builder.append(String.format("Provider: %s, ", this.Provider));
-			builder.append(String.format("Pitch (X): %s, ", this.Axis_X_Pitch));
-			builder.append(String.format("Roll (Y): %s, ", this.Axis_Y_Roll));
-			builder.append(String.format("Heading (Z): %s", this.Axis_Z_Heading));
-			builder.append(String.format("Direction: %s", this.Direction));
+			builder.append(String.format("Pitch (X): %s, ", this.Pitch));
+			builder.append(String.format("Roll (Y): %s, ", this.Roll));
+			builder.append(String.format("Azimuth (Z): %s, ", this.Azimuth));
+			builder.append(String.format("Direction: %s, ", this.Direction));
 			builder.append(String.format("Direction Previous: %s", this.Direction_Previous));
 			
 			return builder.toString();
+		}
+
+		public final static Parcelable.Creator<TrackingDetails> CREATOR = new Parcelable.Creator<TrackingDetails>() {
+			@Override
+			public TrackingDetails createFromParcel(Parcel in){
+				return new TrackingDetails(in);
+			}
+			public TrackingDetails[] newArray(int size) {
+				return new TrackingDetails[size];
+			}
+		};
+		
+		@Override
+		public int describeContents() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public void writeToParcel(Parcel out, int flags) {
+			out.writeArray(new Object[] { 
+					this.Provider, this.Pitch, this.Roll, 
+					this.Azimuth, this.Direction, this.Direction_Previous
+			});
 		}		
 	} // end TrackingDetails
 
 	/*
-	 * Converts the Magnetic Field Sensor heading to compass string value
+	 * Converts the direction to compass heading<br/>
+	 * <br/>
+	 * https://source.android.com/devices/sensors/composite_sensors.html#Magnetometer
+	 * <br/>
+	 * <bold>Orientation</bold><br/>
+	 * <br/>
+	 *	Underlying base sensor(s): Accelerometer, Magnetometer PREFERRED Gyroscope<br/>
+	 *	Trigger-mode: Continuous<br/>
+	 *	Wake-up sensor: No<br/>
+	 *	<br/>
+	 *	Note: This is an older sensor type that has been deprecated in the Android SDK although not yet in the HAL.<br/> 
+	 *	It has been replaced by the rotation vector sensor, which is more clearly defined, requires a gyroscope, and <br/>
+	 *	therefore provides more accurate results. Use the rotation vector sensor over the orientation sensor whenever <br/>
+	 *	possible.<br/>
+	 *	<br/>
+	 *	The orientation sensor tracks the attitude of the device. All values are angles in degrees. Orientation sensors<br/> 
+	 *	return sensor events for all three axes at a constant rate defined by setDelay().<br/>
+	 *	<br/>
+	 *	azimuth: angle between the magnetic north direction and the Y axis, around<br/> 
+	 *	the Z axis (0<=azimuth<360). 0=North, 90=East, 180=South, 270=West<br/>
+	 *	pitch: Rotation around X axis (-180<=pitch<=180), with positive values when the z-axis moves toward the y-axis.<br/>
+ 	 *  roll: Rotation around Y axis (-90<=roll<=90), with positive values when the x-axis moves towards the z-axis.<br/>
+	 *	<br/>
+	 *	Please note, for historical reasons the roll angle is positive in the clockwise direction. (Mathematically speaking,<br/> 
+	 *  it should be positive in the counter-clockwise direction):<br/>
+	 *	<br/>
 	 */
-	private static String headingToCompassValue(float axis_z_Heading) {
-		int heading = (int)axis_z_Heading;
-
-		// NORTH is heading >= -5 and heading <= 5
-		if((heading >= AlrightManager.ANGLE_0-AlrightManager.ANGLE_BUFFER_SIZE) && 
-				(heading <= AlrightManager.ANGLE_0+AlrightManager.ANGLE_BUFFER_SIZE)) return "N";
-		
-		// NORTH EAST is heading > 5 and heading < 85
-		if((heading > AlrightManager.ANGLE_0+AlrightManager.ANGLE_BUFFER_SIZE) && 
-				   (heading < AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE)) return "NE";
-		
-		// EAST is heading >= 85 and heading <= 95
-		if((heading >= AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE) && 
-				   (heading <= AlrightManager.ANGLE_90+AlrightManager.ANGLE_BUFFER_SIZE)) return "E";
-		
-		// SOUTH EAST is heading > 95 and heading < 175
-		if((heading > AlrightManager.ANGLE_90+AlrightManager.ANGLE_BUFFER_SIZE) && 
-				   (heading < AlrightManager.ANGLE_180-AlrightManager.ANGLE_BUFFER_SIZE)) return "SE";
-		
-		// SOUTH is heading <= -175 or heading >= 175
-		if((heading <= (AlrightManager.ANGLE_180-AlrightManager.ANGLE_BUFFER_SIZE)*-1) || 
-				   (heading <= AlrightManager.ANGLE_180+AlrightManager.ANGLE_BUFFER_SIZE)) return "S";
-
-		// NORTH WEST is heading > -85 and heading < -5
-		if((heading > AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE*-1) &&
-				(heading < AlrightManager.ANGLE_0-AlrightManager.ANGLE_BUFFER_SIZE)) return "NW";
-		
-		// WEST is heading >=-95 and heading <= -85
-		if((heading >= (AlrightManager.ANGLE_90+AlrightManager.ANGLE_BUFFER_SIZE)*-1) &&
-				(heading <= (AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE)*-1)) return "W";
-		
-		// SOUTH WEST is heading < -95 and heading >= -175
-		if((heading < (AlrightManager.ANGLE_90-AlrightManager.ANGLE_BUFFER_SIZE)*-1) &&
-				(heading > (AlrightManager.ANGLE_180-AlrightManager.ANGLE_BUFFER_SIZE)*-1)) return "SW";
-
-		return "@#$#%";
+	public static String computeCompassDirection(double angle) {
+		if(angle == AlrightManager.ANGLE_0) return "N"; 		
+		if(angle > AlrightManager.ANGLE_0 && angle < AlrightManager.ANGLE_90) return "NE";  	
+		if(angle == AlrightManager.ANGLE_90) return "E"; 
+		if(angle > AlrightManager.ANGLE_90 && angle < AlrightManager.ANGLE_180) return "SE"; 
+		if(angle == AlrightManager.ANGLE_180) return "S";
+		if(angle > AlrightManager.ANGLE_180 && angle < AlrightManager.ANGLE_270) return "SW"; 
+		if(angle == AlrightManager.ANGLE_270) return "W"; 
+		if(angle > AlrightManager.ANGLE_270 && angle < AlrightManager.ANGLE_360) return "NW"; 
+				
+		// TODO: What should do here
+		return "";
 	} // end headingToCompassValue
 
 	/**
@@ -365,8 +384,7 @@ public class AlrightManager implements
 		}
 
 		if (this.sensorManager != null) {
-			this.stopAccelerometerSensor();
-			this.stopMagneticFieldSensor();
+			this.stopOrientationSensor();
 			
 			this.sensorManager = null;
 		}
@@ -380,18 +398,20 @@ public class AlrightManager implements
 	} // end disconnect
 
 	/**
-	 * Gets the best provider for location updates
+	 * Sets the best provider for location updates
 	 * @return
 	 */
-	public String getBestProviderForLocationUpdates() {
-		Criteria criteria = new Criteria();
-		criteria.setAccuracy(Criteria.ACCURACY_COARSE);
-		criteria.setAltitudeRequired(false);
-		criteria.setBearingRequired(true);
-		criteria.setCostAllowed(true);
-		criteria.setPowerRequirement(Criteria.POWER_LOW);
+	public void setBestProviderForLocationUpdates() {
+		if(this.locationProvider == null) {
+			Criteria criteria = new Criteria();
+			criteria.setAccuracy(Criteria.ACCURACY_COARSE);
+			criteria.setAltitudeRequired(false);
+			criteria.setBearingRequired(true);
+			criteria.setCostAllowed(true);
+			criteria.setPowerRequirement(Criteria.POWER_LOW);
 
-		return this.locationManager.getBestProvider(criteria, true /* enabled providers only*/);
+			this.locationProvider = this.locationManager.getBestProvider(criteria, true /* enabled providers only*/);
+		}
 	} // end getBestProviderForLocationUpdates
 
 	/**
@@ -400,7 +420,7 @@ public class AlrightManager implements
 	 * @param state
 	 */
 	private void handleManagerStateChange(ManagerState state) {
-		Log.d(LOG_TAG, "Handling manager state change");
+		//Log.d(LOG_TAG, "Handling manager state change");
 		for (ManagerStateListener listener : stateListener) {
 			listener.onManagerStateChanged(state);
 		}
@@ -413,13 +433,11 @@ public class AlrightManager implements
 		Log.d(LOG_TAG, "Starting new game");
 
 		this.myDestination = null;
-		this.turnDirection = TURN_DIRECTION_RIGHT;
+		this.onlyRightTurns = true;
 
-		this.stopAccelerometerSensor();
-		this.stopMagneticFieldSensor();
-		this.stopLocationUpdateRequests();
-		
 		this.setMyLastKnownLocation();
+		this.stopLocationUpdateRequests();
+		this.stopOrientationSensor();
 		
 		// Notify client
 		this.handleManagerStateChange(new ManagerState(STATE_TYPE_NEW_GAME,
@@ -430,7 +448,7 @@ public class AlrightManager implements
 	 * Starts the game by listening to location changes
 	 */
 	public void startGame() {
-		Log.d(LOG_TAG,	"Game starting to request location updates for monitoring...");
+		Log.d(LOG_TAG,	"Starting game play...");
 
 		if (this.myDestination == null) {
 			this.handleManagerStateChange(new ManagerState(STATE_TYPE_ERROR,
@@ -438,18 +456,11 @@ public class AlrightManager implements
 			return;
 		}
 
-		this.startAccelerometerSensor();
-		this.startMagneticFieldSensor();
-		this.startLocationUpdateRequests();
-		
 		this.setMyLastKnownLocation();
+		this.startLocationUpdateRequests();
+		this.startOrientationSensor();		
 		
-		if(this.turnDirection == AlrightManager.TURN_DIRECTION_LEFT) {
-			Collections.reverse(this.compassHeadings);
-		}
-		
-		this.handleManagerStateChange(new ManagerState(STATE_TYPE_GAME_STARTED,
-				"Game started"));
+		this.handleManagerStateChange(new ManagerState(STATE_TYPE_GAME_STARTED, "Game started"));
 	} // end startGame
 
 	/**
@@ -458,8 +469,8 @@ public class AlrightManager implements
 	private void startLocationUpdateRequests() {
 		Log.d(LOG_TAG, "Start listening for location updates");
 		
-		String locationProvider = this.getBestProviderForLocationUpdates();
-		this.locationManager.requestLocationUpdates(locationProvider,
+		this.setBestProviderForLocationUpdates();
+		this.locationManager.requestLocationUpdates(this.locationProvider,
 				this.LOCATION_UPDATE_REQUESTS_TIME_IN_MINUTES,
 				this.LOCATION_UPDATES_REQUEST_DISTANCE_IN_METERS, this);
 	} // end startLocationUpdateRequests
@@ -473,93 +484,56 @@ public class AlrightManager implements
 		this.locationManager.removeUpdates(this);
 	} // end stopLocationUpdateRequests
 	
-	/**
-	 * Activate the accelerometer sensor for motion information
-	 */
-	private void startAccelerometerSensor() {
-		Log.d(LOG_TAG, "Start listening on the accelerometer sensor");
 		
-		this.sensorAccelerometer = this.sensorManager
-				.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-		if (this.sensorAccelerometer == null) {
+	/**
+	 * Active the Orientation sensor for compass data
+	 */
+	private void startOrientationSensor() {
+		Log.d(LOG_TAG, "Start listening on the orientation sensor");
+		
+		this.sensorOrientation = this.sensorManager
+				.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+		if (this.sensorOrientation == null) {
 			this.handleManagerStateChange(new ManagerState(STATE_TYPE_ERROR,
-					"Manager could not initial the Android Accelerometer Sensor"));
+					"Manager could not initial the Android Orientation Sensor"));
 			return;
 		}
 
+		Handler handler = new Handler();
+		
+		
 		// NOTE: These listeners should be registered when activity resumes
-		this.sensorManager.registerListener(this, this.sensorAccelerometer,
-				SensorManager.SENSOR_DELAY_NORMAL);
-	} // end startAccelerometerSensor
+		this.sensorManager.registerListener(this, this.sensorOrientation,
+				SensorManager.SENSOR_DELAY_FASTEST);
+	} // end startOrientationSensors
 
 	/**
-	 * Deactivate the accelerometer sensor for motion information
+	 * Deactivate the Orientation sensor for compass data
 	 */
-	private void stopAccelerometerSensor() {
-		Log.d(LOG_TAG, "Stop listening on the accelerometer sensor");
+	private void stopOrientationSensor() {
+		Log.d(LOG_TAG, "Stop listening on the orientation sensor");
 		
-		if (this.sensorAccelerometer != null) {
-			this.sensorManager.unregisterListener(this, this.sensorAccelerometer);
-			this.sensorAccelerometer = null;
-		}
-	} // end stopAccelerometerSensor	
-
-	/**
-	 * Active the magnetic field sensor for compass data
-	 */
-	private void startMagneticFieldSensor() {
-		Log.d(LOG_TAG, "Start listening on the magnetic field sensor");
-		
-		this.sensorMagneticField = this.sensorManager
-				.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-		if (this.sensorMagneticField == null) {
-			this.handleManagerStateChange(new ManagerState(STATE_TYPE_ERROR,
-					"Manager could not initial the Android Magnetic Field Sensor"));
-			return;
-		}
-
-		// NOTE: These listeners should be registered when activity resumes
-		this.sensorManager.registerListener(this, this.sensorMagneticField,
-				SensorManager.SENSOR_DELAY_NORMAL);
-	} // end startMagneticFieldSensors
-
-	/**
-	 * Deactivate the magnetic field sensor for compass data
-	 */
-	private void stopMagneticFieldSensor() {
-		Log.d(LOG_TAG, "Stop listening on the magnetic field sensor");
-		
-		if (this.sensorMagneticField != null) {
-			this.sensorManager.unregisterListener(this, this.sensorMagneticField);
+		if (this.sensorOrientation != null) {
+			this.sensorManager.unregisterListener(this, this.sensorOrientation);
 			
-			this.sensorMagneticField = null;
+			this.sensorOrientation = null;
 		}
-	} // end stopMagneticFieldSensors
-	
+	} // end stopOrientationSensor
+
 	/**
 	 * Sets the turn direction for game play. Default is TURN_DIRECTION_RIGHT.
 	 * 
 	 * @param direction
 	 */
-	public void setTurnDirection(int direction) {
+	public void completeGameSetup(boolean onlyRightTurns) {
 		Log.d(LOG_TAG, "Setting the turn direction...");
 
-		switch (direction) {
-		case TURN_DIRECTION_LEFT:
-		case TURN_DIRECTION_RIGHT:
-			this.turnDirection = direction;
-			this.handleManagerStateChange(new ManagerState(STATE_TYPE_SUCCESS,
-					String.format("Turn direction set to %s", direction)));
-			break;
-
-		default:
-			this.turnDirection = TURN_DIRECTION_RIGHT;
-			this.handleManagerStateChange(new ManagerState(STATE_TYPE_SUCCESS,
-					String.format(
-							"%s is invalid. Turn direction set to right, %s)",
-							direction, TURN_DIRECTION_RIGHT)));
-			break;
-		}
+		if(!(this.onlyRightTurns=onlyRightTurns))
+			Collections.reverse(this.compassHeadings);
+		
+		this.handleManagerStateChange(new ManagerState(AlrightManager.STATE_TYPE_GAME_SETUP_COMPLETE,
+				String.format("Only %s turns allow during game play", (this.onlyRightTurns)?"right":"left")));
+		
 	} // end setTurnDirection
 
 	/**
@@ -568,8 +542,8 @@ public class AlrightManager implements
 	protected void setMyLastKnownLocation() {
 		Log.d(LOG_TAG, "Get last known location");
 				
-		String locationProvider = this.getBestProviderForLocationUpdates();
-		Location location = this.locationManager.getLastKnownLocation(locationProvider);
+		this.setBestProviderForLocationUpdates();
+		Location location = this.locationManager.getLastKnownLocation(this.locationProvider);
 		
 		if(location != null) {
 			this.handleManagerStateChange(new ManagerState(
@@ -586,17 +560,26 @@ public class AlrightManager implements
 	 * Sets the destination for game play
 	 * 
 	 * @param myDestination
-	 *            is a string represent by the search query
 	 */
 	public void setMyDestination(String myDestination) {
-		Log.d(LOG_TAG,	String.format("Setting my destination to %s", myDestination));
+		this.setMyDestination(myDestination, 0);		
+	} // end setMyDestination
 
-		this.myDestination = this.getAddress(myDestination);
+	/**
+	 * Sets the destination for game play
+	 * 
+	 * @param myDestination
+	 * @param position
+	 */
+	public void setMyDestination(String myDestination, int position) {
+		Log.d(LOG_TAG,	String.format("Setting my destination to %s at position %s", myDestination, position));
+
+		this.myDestination = this.getAddress(myDestination, position);
 
 		this.handleManagerStateChange(new ManagerState(
 				AlrightManager.STATE_TYPE_DESTINATION_CHANGED, 
 				this.myDestination));
-	} // end setMyDestination
+	}
 
 	/**
 	 * Retrieves a {@link SearchManager} from System Services
@@ -727,13 +710,7 @@ public class AlrightManager implements
 	public void onLocationChanged(Location location) {
 		Log.d(LOG_TAG, String.format("Location changed to %s", location));
 
-		// NOTE: Should we handle this using LocationManager.addProximityAlert()
-//		if(location.getLatitude() >= this.myDestination.getLatitude()-AlrightManager.LOCATION_PROXIMITY_BUFFER &&
-//				location.getLatitude() <= this.myDestination.getLatitude()+AlrightManager.LOCATION_PROXIMITY_BUFFER &&
-//				location.getLongitude() >= this.myDestination.getLongitude()-AlrightManager.LOCATION_PROXIMITY_BUFFER &&
-//				location.getLongitude() <= this.myDestination.getLongitude()+AlrightManager.LOCATION_PROXIMITY_BUFFER) {			
-//		}
-		
+		// NOTE: Should we handle this using LocationManager.addProximityAlert()		
 		if(location.getLatitude() == this.myDestination.getLatitude() && 
 			location.getLongitude() == this.myDestination.getLongitude()) {
 			this.handleManagerStateChange(new ManagerState(AlrightManager.STATE_TYPE_GAME_OVER_WINNER, "YOU WIN!"));
@@ -750,105 +727,76 @@ public class AlrightManager implements
 
 	@Override
 	public void onProviderEnabled(String provider) {
-		Log.d(LOG_TAG, String.format("Provider (%s) enabled...", provider));
-
-		String locationProvider = this.getBestProviderForLocationUpdates();
-				
-		if (locationProvider.equalsIgnoreCase(provider)) {			
-			this.stopLocationUpdateRequests();
-			this.startLocationUpdateRequests();
-		}
 	}
 
 	@Override
 	public void onProviderDisabled(String provider) {
 		Log.d(LOG_TAG, String.format("Provider (%s) disabled...", provider));
 
-		this.stopLocationUpdateRequests();
-		this.startLocationUpdateRequests();
+		if(provider.equalsIgnoreCase(this.locationProvider)) {
+			this.handleManagerStateChange(new ManagerState(
+					AlrightManager.STATE_TYPE_ERROR, String.format("%s was disabled.", provider.toUpperCase())));
+		}
 	}
 
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// Do nothing
+		if((sensor.getName().equalsIgnoreCase(Sensor.STRING_TYPE_ACCELEROMETER) || 
+			sensor.getName().equalsIgnoreCase(Sensor.STRING_TYPE_MAGNETIC_FIELD)) && 
+			accuracy != SensorManager.SENSOR_STATUS_ACCURACY_HIGH)  {
+			this.handleManagerStateChange(new ManagerState(AlrightManager.STATE_TYPE_WARNING, "Calibration required for best game play"));
+		}
 	}
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 		// Log.d(LOG_TAG, String.format("Sensor changed for: %s", event.sensor.getName()));
 
-		switch (event.sensor.getType()) {
-		case Sensor.TYPE_ACCELEROMETER:
-			this.valuesForAccelerometer = event.values.clone();
-			break;
-
-		case Sensor.TYPE_MAGNETIC_FIELD:
-			this.valuesForMagneticField = event.values.clone();
-			break;
-		}
-
-		if(this.valuesForAccelerometer == null || this.valuesForMagneticField == null)
-			return;
-		
-		float[] inR = new float[9];
-		if(SensorManager.getRotationMatrix(inR, null, this.valuesForAccelerometer, this.valuesForMagneticField)) {
-			// Remap the coordinates based on the natural device orientation.
-		    int x_axis = SensorManager.AXIS_X; 
-		    int y_axis = SensorManager.AXIS_Y;
-
-			Display display = ((WindowManager) this.context
-					.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-
-		    switch (display.getRotation()) {
-		      	case (Surface.ROTATION_90):  
-		      		x_axis = SensorManager.AXIS_Y; 
-		      		y_axis = SensorManager.AXIS_MINUS_X; 
-		      		break;
-		      		
-		      	case (Surface.ROTATION_180):
-		    	  	x_axis = SensorManager.AXIS_X; 
-		        	y_axis = SensorManager.AXIS_MINUS_Y; 
-		        	break;
-		        	
-		      	case (Surface.ROTATION_270): 
-		      		x_axis = SensorManager.AXIS_MINUS_Y; 
-		      		y_axis = SensorManager.AXIS_X; 
-		      		break;
-		      		
-		      default: 
-		    	  break;
-		    }
-
-		    float[] outR = new float[9];
-			float[] values = new float[3];
-			
-		    SensorManager.remapCoordinateSystem(inR, x_axis, y_axis, outR);    
-			SensorManager.getOrientation(outR, values);
-
-			String locationProvider = this.getBestProviderForLocationUpdates();
-			TrackingDetails trackingDetails = new TrackingDetails(locationProvider, 
-					values[0 /*AXIS_Z*/], values[1/*AXIS_X*/], values[2/*AXIS_Y*/], 
-					this.currentDirection.toString());
-
-			if(this.currentDirection.length() == 0) {
-				this.currentDirection = new StringBuilder(trackingDetails.Direction);
-				return;
+		synchronized(this) {
+			float azimuth = 0, pitch = 0, roll = 0;
+			switch (event.sensor.getType()) {
+				case Sensor.TYPE_ORIENTATION:
+					azimuth = event.values[0];
+					pitch = event.values[1];
+					roll = event.values[2];
+					break;
+					
+				// NOTE: Plenty of samples to use Accelerometer and Magnetic Field but
+				// all did something different and never gave the results we were looking
+				// for. Using the following sensors  
+				case Sensor.TYPE_ACCELEROMETER: // and the following
+				case Sensor.TYPE_MAGNETIC_FIELD: // objects and methods
+					// WindowsManager.getDisplay() 
+					// Display.getRotation()
+					// SensorManager.getRotationMatrix()
+					// SensorManager.remapCoordinateSystem();    
+				    // SensorManager.getOrientation();			
+				default:
+					break;
 			}
+	
+			TrackingDetails trackingDetails = new TrackingDetails(this.locationProvider, 
+					azimuth, pitch, roll, this.currentDirection);
+					
+			if(this.currentDirection ==  null)
+				this.currentDirection = trackingDetails.Direction;
 			
+			// Are we still on track
 			int stateType = AlrightManager.STATE_TYPE_STILL_ON_TRACK;
-			if(!this.currentDirection.toString().equalsIgnoreCase(trackingDetails.Direction)) {	
+			if(!this.currentDirection.equalsIgnoreCase(trackingDetails.Direction)) {	
 				// Get index of next possible direction
 				int index = this.compassHeadings.indexOf(this.currentDirection)+1;
 				index = (index < this.compassHeadings.size())? index: 0;
-				
+	
 				// Did you make a wrong turn?
-				if(!this.compassHeadings.get(index).equalsIgnoreCase(trackingDetails.Direction)){
+				String direction = this.compassHeadings.get(index); 
+				if(!direction.equalsIgnoreCase(trackingDetails.Direction)){
 					stateType = AlrightManager.STATE_TYPE_GAME_OVER_LOSER;					
 				}
 			} // end if
 			
 			this.handleManagerStateChange(new ManagerState(stateType, trackingDetails));
-		} // end if
+		}
 	}
 
 	@Override

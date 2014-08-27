@@ -7,7 +7,7 @@ import android.util.Log;
 public class AlrightApplication extends Application implements 
 	Thread.UncaughtExceptionHandler 
 {
-	private final static String LOG_TAG = "Alright Application";
+	private final static String LOG_TAG = "AlrightApplication";
 		
 	public AlrightApplication() {
 	}
