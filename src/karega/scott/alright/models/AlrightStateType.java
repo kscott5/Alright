@@ -1,0 +1,17 @@
+package karega.scott.alright.models;
+
+public enum AlrightStateType {
+		WARNING,
+		ERROR,
+		SUCCESS,
+		SETUP_GAME,
+		NO_CHANGE,
+		MY_LOCATION,
+		DESTINATION_CHANGED,
+		GAME_STARTED,
+		GAME_SETUP_COMPLETE,
+		STILL_ON_TRACK,
+		GAME_OVER_LOSER,
+		GAME_OVER_WINNER,
+		CONNECTED,
+}

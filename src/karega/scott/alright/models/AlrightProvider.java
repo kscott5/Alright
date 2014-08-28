@@ -21,7 +21,7 @@ import android.util.Log;
  *
  */
 public class AlrightProvider extends ContentProvider {
-	private final static String LOG_TAG = "AlrightProvider";
+	private final static String LOG_TAG = "ContentProvider";
 	
     // List of possible content provider uri. Add more as needed
     private final static String CONTENT_PATH = "geocoder";
@@ -82,7 +82,7 @@ public class AlrightProvider extends ContentProvider {
      * @return Cursor with information
      */
     private Cursor getLocationsByName(String[] queryArgs) {
-    	Log.d(LOG_TAG, "Get location by name");
+    	Log.d(LOG_TAG, String.format("Get locations by name [%s]", TextUtils.join(" ", queryArgs)));
     	
     	MatrixCursor cursor = getMatrixCursor();
     	
@@ -134,7 +134,7 @@ public class AlrightProvider extends ContentProvider {
 
 	@Override
 	public boolean onCreate() {
-		Log.d(LOG_TAG, "Creating content provider dependencies");
+		Log.d(LOG_TAG, "Creating...");
 		
 		this.manager = AlrightManager.getInstance(getContext());
 		return false;
@@ -143,6 +143,7 @@ public class AlrightProvider extends ContentProvider {
 	@Override
 	public Cursor query(Uri uri, String[] projection, String selection,
 			String[] selectionArgs, String sortOrder) {
+		Log.d(LOG_TAG, String.format("Querying URI [%s]", uri.toString()));
 		
 		switch(uriMatcher.match(uri)) {
 			case LOCATION:
