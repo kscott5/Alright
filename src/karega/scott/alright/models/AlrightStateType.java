@@ -3,7 +3,6 @@ package karega.scott.alright.models;
 public enum AlrightStateType {
 		WARNING,
 		ERROR,
-		SUCCESS,
 		SETUP_GAME,
 		NO_CHANGE,
 		MY_LOCATION,
@@ -14,4 +13,5 @@ public enum AlrightStateType {
 		GAME_OVER_LOSER,
 		GAME_OVER_WINNER,
 		CONNECTED,
+		DISCONNECTED,
 }

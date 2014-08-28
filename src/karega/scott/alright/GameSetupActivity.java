@@ -61,7 +61,7 @@ public class GameSetupActivity extends Activity implements
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_game_setup);
 
-		this.manager = AlrightManager.getInstance(this.getApplicationContext()).connect();
+		this.manager = AlrightManager.getInstance(this.getApplicationContext());
 		
 		this.queryText = "";
 
@@ -113,7 +113,17 @@ public class GameSetupActivity extends Activity implements
 		super.onStart();
 		
 		// Activity visible start listening
-		this.manager.setupGame(this);
+		this.manager.startSetup(this);
+	}
+	
+	@Override
+	protected void onResume() {
+		//Log.d(LOG_TAG, "onResume");
+		// NO NEED onStart handles this case
+		
+		super.onResume();
+		
+		this.manager.startSetup(this);
 	}
 	
 	@Override
@@ -122,11 +132,7 @@ public class GameSetupActivity extends Activity implements
 		
 		super.onPause();
 		
-		if(this.isFinishing()) {
-			// NOTE: This should only be done once in MainActivity 
-			// Application is closing for good
-			//this.manager.disconnect();
-		}
+		this.manager.stopSetup(this);
 	}
 	
 	@Override
@@ -136,7 +142,26 @@ public class GameSetupActivity extends Activity implements
 		super.onStop();
 		
 		// Activity hidden stop listening
-		this.manager.removeManagerStateListener(this);
+		this.manager.stopSetup(this);
+	}
+	
+	@Override
+	protected void onDestroy() {
+		Log.d(LOG_TAG, "onDestroy");
+		
+		this.actionBar = null;
+		this.map = null;
+
+		this.myDestinationText = null;
+		this.myDestinationIcon = null;
+		this.myLocationIcon = null;
+
+		this.gameCardButtonsLeft = null;
+		this.gameCardButtonsRight = null;
+
+		this.queryText = null;
+		
+		super.onDestroy();
 	}
 	
 	@Override
@@ -176,17 +201,19 @@ public class GameSetupActivity extends Activity implements
 		Log.d(LOG_TAG, String.format("onClicked %s", ""));
 
 		switch (v.getId()) {
-		case R.id.game_card_buttons_left_textbox:
-			this.manager.completeGameSetup(/* onlyRightTurns */false);
-			break;
-
-		case R.id.game_card_buttons_right_textbox:
-			this.manager.completeGameSetup(/* onlyRightTurns */true);
-			break;
-
-		case R.id.game_mydestination_textbox:
-			this.actionBar.show();
-			break;
+			case R.id.game_card_buttons_left_textbox:
+				this.finish();
+				this.manager.completeGameSetup(/* onlyRightTurns */false);
+				break;
+	
+			case R.id.game_card_buttons_right_textbox:
+				this.finish();
+				this.manager.completeGameSetup(/* onlyRightTurns */true);
+				break;
+	
+			case R.id.game_mydestination_textbox:
+				this.actionBar.show();
+				break;
 		}
 	}
 
@@ -226,13 +253,6 @@ public class GameSetupActivity extends Activity implements
 				this.gameCardButtonsRight.setOnClickListener(this);
 				this.gameCardButtonsLeft.setOnClickListener(this);
 				break;
-				
-			case GAME_SETUP_COMPLETE:
-				// This shouldn't be required if 
-				//		MainActivity.finishActivity(requestCode)				
-				this.finish();
-				break;
-				
 		}
 	}
 

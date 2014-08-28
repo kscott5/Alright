@@ -25,7 +25,7 @@ public class HelpActivity extends Activity implements
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_help);
 
-		this.manager = AlrightManager.getInstance(this.getBaseContext()).connect();
+		this.manager = AlrightManager.getInstance(this.getBaseContext());
 		
 		if(actionBar == null) {
 			actionBar = this.getActionBar();
@@ -40,20 +40,27 @@ public class HelpActivity extends Activity implements
 		super.onStart();
 		
 		// Activity visible start listening
-		this.manager.addManagerStateListener(this);
+		this.manager.startHelp(this);
 	}
 	
+	@Override
+	protected void onResume() {
+		//Log.d(LOG_TAG, "onResume");
+		// NO NEED onStart handles this case
+		
+		super.onResume();	
+		
+		this.manager.startHelp(this);
+	}
+	
+
 	@Override
 	protected void onPause() {
 		Log.d(LOG_TAG, "onPause");
 		
 		super.onPause();
 		
-		if(this.isFinishing()) {
-			// NOTE: This should only be done once in MainActivity 
-			// Application is closing for good
-			//this.manager.disconnect();
-		}
+		this.manager.stopHelp(this);
 	}
 	
 	@Override
@@ -63,9 +70,18 @@ public class HelpActivity extends Activity implements
 		super.onStop();
 		
 		// Activity hidden stop listening
-		this.manager.removeManagerStateListener(this);
+		this.manager.stopHelp(this);
 	}
 
+	@Override
+	protected void onDestroy() {
+		Log.d(LOG_TAG, "onDestroy");
+	
+		this.actionBar = null;
+		
+		super.onDestroy();
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.

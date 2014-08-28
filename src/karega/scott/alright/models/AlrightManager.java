@@ -46,26 +46,28 @@ public class AlrightManager implements
 	public final static int MAX_RESULTS = 10;
 	public final static int MIN_RESULTS = 1;
 
-	private final static float ANGLE_0 = 0;
-	private final static float ANGLE_90 = 90;
-	private final static float ANGLE_180 = 180;
-	private final static float ANGLE_270 = 270;
-	private final static float ANGLE_360 = 360;
+	private final static double ANGLE_0 = 0;
+	private final static double ANGLE_90 = 90;
+	private final static double ANGLE_180 = 180;
+	private final static double ANGLE_270 = 270;
+	private final static double ANGLE_360 = 360;
 	
 	private final static long LOCATION_REQUEST_INTERVAL = 0; // seconds
 
 	// TODO: is this the correct for Observable Pattern in Java
-	private static ArrayList<ManagerStateListener> stateListener = new ArrayList<ManagerStateListener>();
-	private ArrayList<String> compassHeadings = new ArrayList<String>();
+	private static ArrayList<ManagerStateListener> stateListener;
+	
+	private ArrayList<String> compassHeadings;
 	private GoogleApiClient googleApiClient;
 
-	private boolean onlyRightTurns = false;
-	private String currentDirection = null;		
+	private boolean onlyRightTurns;
+	private String currentDirection;		
 	
-	private static AlrightManager manager;
 	private Address myDestination;
 	private Context context;
-	
+
+	private static AlrightManager manager;
+
 	/*
 	 * Converts the direction to compass heading<br/>
 	 * 
@@ -83,6 +85,66 @@ public class AlrightManager implements
 		// TODO: What should do here
 		return "";
 	} // end headingToCompassValue
+
+	/**
+	 * Singleton for AlrightManager
+	 * 
+	 * @param context
+	 * @return
+	 */
+	public static AlrightManager getInstance(Context context) {
+		Log.d(LOG_TAG, "Get single instance...");
+
+		// TODO: Lock to prevent others from access
+		if (manager == null) {
+			manager = new AlrightManager(context).connect();
+		}
+
+		return manager;
+	} // end getInstance
+
+	/*
+	 * Handle the AlrightApplication error	
+	 */
+	public static void handleApplicationError(Context context, Throwable ex) {
+		Log.d(LOG_TAG, "Handling application error");
+		
+		if(ex == null)
+			return;
+
+		// TODO: Display user friendly dialog
+		// TODO: Send notification to developer
+			
+		try {			
+			FileOutputStream fileStream = context.openFileOutput(AlrightManager.LOG_FILE_NAME, Context.MODE_PRIVATE);
+			PrintStream printStream = new PrintStream(fileStream);
+			ex.printStackTrace(printStream);
+			fileStream.close();
+		} catch(Exception e) {
+			// DO NOTHING
+		}
+
+	} // end handleApplicationError
+	
+	/**
+	 * Converts the the address to a string
+	 * 
+	 * @param address
+	 *            object
+	 * @return
+	 */
+	public static String addressToString(Address address) {
+		Log.d(LOG_TAG, "Converting address to string");
+
+		if (address == null)
+			return null;
+
+		StringBuffer data = new StringBuffer();
+		for (int i = 0; i < address.getMaxAddressLineIndex(); i++) {
+			data.append(String.format("%s ", address.getAddressLine(i)));
+		}
+		return data.toString();
+	} // end addressToString
 
 	/**
 	 * Details related to the current state of AlrightManager
@@ -132,6 +194,10 @@ public class AlrightManager implements
 		// the likely hood of traveling true NORTH, SOUTH, EAST and WEST slim. So,
 		// we exclude these direction from game play.
 	
+		 AlrightManager.stateListener = new ArrayList<ManagerStateListener>();
+		this.compassHeadings = new ArrayList<String>();
+		this.onlyRightTurns = false;
+		
 		//this.compassHeadings.add("N");
 		this.compassHeadings.add("NE");
 		//this.compassHeadings.add("E");
@@ -142,72 +208,12 @@ public class AlrightManager implements
 		this.compassHeadings.add("NW");	
 	} // end constructor
 
-	/**
-	 * Singleton for AlrightManager
-	 * 
-	 * @param context
-	 * @return
-	 */
-	public static AlrightManager getInstance(Context context) {
-		Log.d(LOG_TAG, "Get single instance...");
-
-		// TODO: Lock to prevent others from access
-		if (manager == null) {
-			manager = new AlrightManager(context);
-		}
-
-		return manager;
-	} // end getInstance
-
-	/*
-	 * Handle the AlrightApplication error	
-	 */
-	public void handleApplicationError(Throwable ex) {
-		Log.d(LOG_TAG, "Handling application error");
-		
-		if(ex == null)
-			return;
-
-		// TODO: Display user friendly dialog
-		// TODO: Send notification to developer
-			
-		try {			
-			FileOutputStream fileStream = context.openFileOutput(AlrightManager.LOG_FILE_NAME, Context.MODE_PRIVATE);
-			PrintStream printStream = new PrintStream(fileStream);
-			ex.printStackTrace(printStream);
-			fileStream.close();
-		} catch(Exception e) {
-			// DO NOTHING
-		}
-
-	} // end handleApplicationError
-	
-	/**
-	 * Converts the the address to a string
-	 * 
-	 * @param address
-	 *            object
-	 * @return
-	 */
-	public static String addressToString(Address address) {
-		Log.d(LOG_TAG, "Converting address to string");
-
-		if (address == null)
-			return null;
-
-		StringBuffer data = new StringBuffer();
-		for (int i = 0; i < address.getMaxAddressLineIndex(); i++) {
-			data.append(String.format("%s ", address.getAddressLine(i)));
-		}
-		return data.toString();
-	} // end addressToString
-
 	/*
 	 * Adds the listener to the manager
 	 * 
 	 * @param listener use to observe the manager 
 	 */
-	public void addManagerStateListener(ManagerStateListener listener) {
+	private void addManagerStateListener(ManagerStateListener listener) {
 		if (!stateListener.contains(listener)) {
 			stateListener.add(listener);
 		}
@@ -217,8 +223,8 @@ public class AlrightManager implements
 	 * Removes the listener from the manager
 	 * @param listener remove from observing the manager
 	 */
-	public void removeManagerStateListener(ManagerStateListener listener) {
-		if(!stateListener.contains(listener)) {
+	private void removeManagerStateListener(ManagerStateListener listener) {
+		if(stateListener.contains(listener)) {
 			stateListener.remove(listener);
 		}
 	} // end removeManagerStateListener
@@ -231,7 +237,7 @@ public class AlrightManager implements
 	 * 
 	 * @return AlrightManager
 	 */
-	public AlrightManager connect() {
+	private AlrightManager connect() {
 		if (this.googleApiClient != null && this.googleApiClient.isConnected()) {
 			Log.d(LOG_TAG, "Connected");
 
@@ -262,19 +268,34 @@ public class AlrightManager implements
 	 * Sensor <br/>
 	 * 
 	 */
-	public AlrightManager disconnect() {
+	private void disconnect(ManagerStateListener listener) {
 		Log.d(LOG_TAG, "Disconnecting the manager");
 
+		if(AlrightManager.manager == null)
+			return;
+		
 		if (this.googleApiClient != null) {
 			this.googleApiClient.disconnect();
 		}
 
-		this.handleManagerStateChange(new ManagerState(AlrightStateType.SUCCESS,
+		this.handleManagerStateChange(new ManagerState(AlrightStateType.DISCONNECTED,
 				"Manager disconnected"));
 
-		AlrightManager.manager = null;
+		this.removeManagerStateListener(listener);
 		
-		return AlrightManager.manager;
+		// Clean up
+		this.context = null;
+		this.googleApiClient = null;
+		this.currentDirection = null;
+		this.myDestination = null;
+		
+		this.compassHeadings.clear();
+		this.compassHeadings = null;
+
+		AlrightManager.stateListener.clear();
+		AlrightManager.stateListener = null;
+		
+		AlrightManager.manager = null;
 	} // end disconnect
 
 	/**
@@ -289,12 +310,56 @@ public class AlrightManager implements
 		}
 	}
 
+	/*
+	 * Start main listening to manager
+	 * @param listener ManagerStateListener
+	 */
+	public void startMain(ManagerStateListener listener) {
+		Log.d(LOG_TAG, "Start Main");
+
+		this.addManagerStateListener(listener);	
+		this.stopLocationUpdateRequests();
+	} // end startMain
+	
+	/*
+	 * Stop main from listening to manager
+	 * @param listener 
+	 * @param isFinishing see document for Activity.isFinishing()
+	 */
+	public void stopMain(ManagerStateListener listener, boolean isFinishing) {
+		Log.d(LOG_TAG, "Stop Main");
+
+		if(isFinishing) {
+			this.disconnect(listener);
+		}
+	} // end stopMain
+
+	/*
+	 * Start help listening to manager
+	 * @param listener ManagerStateListener
+	 */
+	public void startHelp(ManagerStateListener listener) {
+		Log.d(LOG_TAG, "Start Help");
+
+		this.addManagerStateListener(listener);	
+	} // end startHelp	
+	
+	/*
+	 * Stop help from listening to manager
+	 * @param listener ManagerStateListener
+	 */
+	public void stopHelp(ManagerStateListener listener) {
+		Log.d(LOG_TAG, "Stop Help");
+
+		this.removeManagerStateListener(listener);	
+	} // end stopHelp
+	
 	/**
-	 * Setup manager for new game play
+	 * Start setup listening to manager
 	 * @param listener used to observe changes on the manager
 	 */
-	public void setupGame(ManagerStateListener listener) {
-		Log.d(LOG_TAG, "Setting up new game");
+	public void startSetup(ManagerStateListener listener) {
+		Log.d(LOG_TAG, "Start Setup");
 
 		this.addManagerStateListener(listener);
 		
@@ -309,12 +374,21 @@ public class AlrightManager implements
 				"Game setup ready"));
 	} // end newGame
 
+	/*
+	 * Stop setup from listening to manager
+	 */
+	public void stopSetup(ManagerStateListener listener) {
+		Log.d(LOG_TAG, "Stop Setup");
+
+		this.removeManagerStateListener(listener);	
+	} // end stopSetup
+
 	/**
-	 * Start manager tracking players move for current game play
+	 * Start tracker listening to manager
 	 * @param listener used to observe changes on the manager
 	 */
-	public void startTracking(ManagerStateListener listener) {
-		Log.d(LOG_TAG,	"Starting game play...");
+	public void startTracker(ManagerStateListener listener) {
+		Log.d(LOG_TAG,	"Start Tracker");
 
 		this.addManagerStateListener(listener);
 		
@@ -330,17 +404,28 @@ public class AlrightManager implements
 		this.handleManagerStateChange(new ManagerState(AlrightStateType.GAME_STARTED, "Game started"));
 	} // end startGame
 
+	/*
+	 * Stop tracker from listening to manager
+	 */
+	public void stopTracker(ManagerStateListener listener) {
+		Log.d(LOG_TAG, "Stop Tracker");
+
+		this.removeManagerStateListener(listener);	
+	} // end stopTracker
+
 	/**
 	 * Activate location update requests
 	 */
 	private void startLocationUpdateRequests() {
 		Log.d(LOG_TAG, "Start listening for location updates");
 		
-		LocationRequest request = LocationRequest.create();
-		request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-		request.setInterval(AlrightManager.LOCATION_REQUEST_INTERVAL);
-		
-		LocationServices.FusedLocationApi.requestLocationUpdates(this.googleApiClient, request, this);		
+		if(this.googleApiClient.isConnected()) {		
+			LocationRequest request = LocationRequest.create();
+			request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+			request.setInterval(AlrightManager.LOCATION_REQUEST_INTERVAL);
+			
+			LocationServices.FusedLocationApi.requestLocationUpdates(this.googleApiClient, request, this);
+		}
 	} // end startLocationUpdateRequests
 	
 	/**

@@ -39,7 +39,7 @@ public class LocationTrackerActivity extends Activity implements
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_location_tracker);
 		
-		this.manager = AlrightManager.getInstance(this.getApplicationContext()).connect();
+		this.manager = AlrightManager.getInstance(this.getApplicationContext());
 		
 		// NOTE: Not for production use
 		if(/* TODO: Debug Only*/ true) {
@@ -62,20 +62,26 @@ public class LocationTrackerActivity extends Activity implements
 		super.onStart();
 		
 		// Activity visible start listening
-		this.manager.startTracking(this);
+		this.manager.startTracker(this);
 	}
-	
+
+	@Override
+	protected void onResume() {
+		//Log.d(LOG_TAG, "onResume");
+		// NO NEED onStart handles this case
+		
+		super.onResume();
+		
+		this.manager.startTracker(this);
+	}
+
 	@Override
 	protected void onPause() {
 		Log.d(LOG_TAG, "onPause");
 		
 		super.onPause();
-		
-		if(this.isFinishing()) {
-			// NOTE: This should only be done once in MainActivity 
-			// Application is closing for good
-			//this.manager.disconnect();
-		}
+
+		this.manager.stopTracker(this);
 	}
 	
 	@Override
@@ -84,8 +90,18 @@ public class LocationTrackerActivity extends Activity implements
 		
 		super.onStop();
 		
-		// Activity hidden stop listening
-		this.manager.removeManagerStateListener(this);
+		this.manager.stopTracker(this);
+	}
+
+	@Override
+	protected void onDestroy() {
+		Log.d(LOG_TAG, "onDestroy");
+	
+		this.container = null;
+		this.containerMap = null;
+		this.containerSummary = null;
+		
+		super.onDestroy();
 	}
 	
 	@Override

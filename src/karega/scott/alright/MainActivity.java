@@ -40,7 +40,7 @@ public class MainActivity extends Activity implements
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		this.manager = AlrightManager.getInstance(getApplicationContext()).connect();
+		this.manager = AlrightManager.getInstance(getApplicationContext());
 		
 		this.newGameButton = (Button)this.findViewById(R.id.new_game);
 		this.newGameButton.setOnClickListener(this);
@@ -62,20 +62,7 @@ public class MainActivity extends Activity implements
 		super.onStart();
 		
 		// Activity visible start listening
-		this.manager.addManagerStateListener(this);
-	}
-	
-	@Override
-	protected void onPause() {
-		Log.d(LOG_TAG, "onPause");
-		
-		super.onPause();
-		
-		if(this.isFinishing()) {
-			// NOTE: This should only be done once in MainActivity 
-			// Application is closing for good
-			this.manager.disconnect();
-		}
+		this.manager.startMain(this);
 	}
 	
 	@Override 
@@ -88,13 +75,32 @@ public class MainActivity extends Activity implements
 	}
 	
 	@Override
+	protected void onPause() {
+		Log.d(LOG_TAG, "onPause");
+		
+		super.onPause();
+		
+		this.manager.stopMain(this, this.isFinishing());
+	}
+	
+	@Override
 	protected void onStop() {
 		Log.d(LOG_TAG, "onStop");
 		
 		super.onStop();
 		
-		// Activity hidden stop listening
-		this.manager.removeManagerStateListener(this);
+		this.manager.stopMain(this, false /* View Activity.isFishing() to determine why false here*/);
+	}
+
+	@Override
+	protected void onDestroy() {
+		Log.d(LOG_TAG, "onDestroy");
+		
+		this.actionBar = null;
+		this.helpButton = null;
+		this.newGameButton = null;
+		
+		super.onDestroy();
 	}
 	
 	@Override
@@ -147,6 +153,10 @@ public class MainActivity extends Activity implements
 				
 			case GAME_OVER_WINNER:
 				// TODO: Show DialogFragment
+				break;
+				
+			case DISCONNECTED:
+				// DO NOTHING
 				break;
 		}
 	}

@@ -17,7 +17,7 @@ public class AlrightApplication extends Application implements
 	public void onCreate() {
 		Thread.setDefaultUncaughtExceptionHandler(this);
 		
-		this.manager = AlrightManager.getInstance(this.getBaseContext()).connect();
+		this.manager = AlrightManager.getInstance(this.getBaseContext());
 	}
 
 	@Override
@@ -25,7 +25,7 @@ public class AlrightApplication extends Application implements
 		Log.d(LOG_TAG, "Handling uncaught exception...");
 		
 		try {
-			this.manager.handleApplicationError(ex);
+			AlrightManager.handleApplicationError(this.getApplicationContext(), ex);
 		} catch(Exception e) {
 			// DO NOTHING
 		} // end try-catch
