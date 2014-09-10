@@ -3,6 +3,7 @@ package karega.scott.alright.models;
 public enum AlrightStateType {
 		WARNING,
 		ERROR,
+		ERROR_GOOGLE_PLAY_SERVICES,
 		SETUP_GAME,
 		NO_CHANGE,
 		MY_LOCATION,
@@ -13,5 +14,6 @@ public enum AlrightStateType {
 		GAME_OVER_LOSER,
 		GAME_OVER_WINNER,
 		CONNECTED,
+		CONNECTING,
 		DISCONNECTED,
 }

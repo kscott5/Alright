@@ -135,6 +135,7 @@ public class LocationTrackerActivity extends Activity implements
 			
 			
 			case GAME_OVER_LOSER:
+			case GAME_OVER_WINNER:
 			case STILL_ON_TRACK:
 				this.showTrackingDetails((Location)state.stateData);
 				break;

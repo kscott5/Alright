@@ -21,6 +21,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Address;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -32,7 +33,7 @@ import android.widget.TextView;
 /*
  * Activity used to setup game parameters for play
  */
-public class GameSetupActivity extends Activity implements
+public class GameSetupActivity extends FragmentActivity implements
 		OnClickListener, 
 		OnCloseListener, 
 		OnSuggestionListener,
@@ -97,10 +98,6 @@ public class GameSetupActivity extends Activity implements
 		if (this.map == null) {
 			this.map = ((MapFragment) getFragmentManager().findFragmentById(
 					R.id.game_card_summary_map)).getMap();
-
-			if (this.map == null) {
-				// TODO: Device Issue Notify User
-			}
 
 			this.map.setMyLocationEnabled(true);
 		} // end if

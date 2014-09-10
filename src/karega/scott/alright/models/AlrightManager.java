@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.google.android.gms.common.ConnectionResult;
+//import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
@@ -46,34 +47,79 @@ public class AlrightManager implements
 	public final static int MAX_RESULTS = 10;
 	public final static int MIN_RESULTS = 1;
 
-	private final static double ANGLE_0 = 0;
-	private final static double ANGLE_90 = 90;
-	private final static double ANGLE_180 = 180;
-	private final static double ANGLE_270 = 270;
-	private final static double ANGLE_360 = 360;
+	public final static double ANGLE_0 = 0;
+	public final static double ANGLE_90 = 90;
+	public final static double ANGLE_180 = 180;
+	public final static double ANGLE_270 = 270;
+	public final static double ANGLE_360 = 360;
+	
+	public final static String COMPASS_HEADING_NORTH = "N";
+	public final static String COMPASS_HEADING_NORTH_EAST = "NE";
+	public final static String COMPASS_HEADING_EAST = "E";
+	public final static String COMPASS_HEADING_SOUTH_EAST = "SE";
+	public final static String COMPASS_HEADING_SOUTH = "S";
+	public final static String COMPASS_HEADING_SOUTH_WEST = "SW";
+	public final static String COMPASS_HEADING_WEST = "W";
+	public final static String COMPASS_HEADING_NORTH_WEST = "NW";
 	
 	private final static long LOCATION_REQUEST_INTERVAL = 0; // seconds
 
 	// TODO: is this the correct for Observable Pattern in Java
-	private static ArrayList<ManagerStateListener> stateListener;
+	private static ArrayList<ManagerStateListener> stateListeners;
 	
 	private ArrayList<String> compassHeadings;
+	
+	// Developer.Android.
 	private GoogleApiClient googleApiClient;
 
 	private boolean onlyRightTurns;
 	private String currentDirection;		
 	
-	private Address myDestination;
+	private Address myDestinationAddress;
 	private Context context;
 
 	private static AlrightManager manager;
 
 	/*
+	 * Adds the listener to the manager
+	 * 
+	 * @param listener use to observe the manager 
+	 */
+	public static boolean addManagerStateListener(ManagerStateListener listener) {
+		if(AlrightManager.stateListeners == null)
+			stateListeners = new ArrayList<ManagerStateListener>();
+		
+		boolean added = false;
+		if (!AlrightManager.stateListeners.contains(listener)) {
+			AlrightManager.stateListeners.add(listener);
+			added = true;
+		}
+		
+		return added;
+	} // end addManagerStateListener
+
+	/*
+	 * Removes the listener from the manager
+	 * @param listener remove from observing the manager
+	 */
+	public static boolean removeManagerStateListener(ManagerStateListener listener) {
+		if(AlrightManager.stateListeners == null)
+			AlrightManager.stateListeners = new ArrayList<ManagerStateListener>();
+		
+		boolean removed = false;
+		if(AlrightManager.stateListeners.contains(listener)) {
+			AlrightManager.stateListeners.remove(listener);
+			removed = true;
+		}
+		
+		return removed;
+	} // end removeManagerStateListener
+	
+	/*
 	 * Converts the direction to compass heading<br/>
 	 * 
 	 */
 	public static String computeCompassDirection(double bearing) {
-		if(bearing == AlrightManager.ANGLE_0) return "N"; 		
 		if(bearing > AlrightManager.ANGLE_0 && bearing < AlrightManager.ANGLE_90) return "NE";  	
 		if(bearing == AlrightManager.ANGLE_90) return "E"; 
 		if(bearing > AlrightManager.ANGLE_90 && bearing < AlrightManager.ANGLE_180) return "SE"; 
@@ -82,8 +128,8 @@ public class AlrightManager implements
 		if(bearing == AlrightManager.ANGLE_270) return "W"; 
 		if(bearing > AlrightManager.ANGLE_270 && bearing < AlrightManager.ANGLE_360) return "NW"; 
 				
-		// TODO: What should do here
-		return "";
+		//if(bearing == AlrightManager.ANGLE_0) 		
+			return "N";
 	} // end headingToCompassValue
 
 	/**
@@ -96,12 +142,44 @@ public class AlrightManager implements
 		Log.d(LOG_TAG, "Get single instance...");
 
 		// TODO: Lock to prevent others from access
-		if (manager == null) {
-			manager = new AlrightManager(context).connect();
+		if (AlrightManager.manager == null) {
+			AlrightManager.manager = new AlrightManager(context).connect();
 		}
 
-		return manager;
+		return AlrightManager.manager;
 	} // end getInstance
+
+	/*
+	 * Resets the current instance of the manager 
+	 */
+	public static void resetInstance(ManagerStateListener listener) {
+		if(AlrightManager.manager == null)
+			return;
+		
+		if (AlrightManager.manager.googleApiClient != null) {
+			AlrightManager.manager.googleApiClient.disconnect();
+		}
+
+		AlrightManager.manager.handleManagerStateChange(new ManagerState(AlrightStateType.DISCONNECTED,
+				"Manager disconnected"));
+
+		if(listener != null)
+			AlrightManager.removeManagerStateListener(listener);
+		
+		// Clean up
+		AlrightManager.manager.context = null;
+		AlrightManager.manager.googleApiClient = null;
+		AlrightManager.manager.currentDirection = null;
+		AlrightManager.manager.myDestinationAddress = null;
+		
+		AlrightManager.manager.compassHeadings.clear();
+		AlrightManager.manager.compassHeadings = null;
+
+		AlrightManager.stateListeners.clear();
+		AlrightManager.stateListeners = null;
+		
+		AlrightManager.manager = null;
+	}
 
 	/*
 	 * Handle the AlrightApplication error	
@@ -189,46 +267,20 @@ public class AlrightManager implements
 	private AlrightManager(Context context) {
 		Log.d(LOG_TAG, "Constructor...");
 		this.context = context.getApplicationContext();
-		
-		// NOTE: Due the accuracy and the rate in which the onSensorChanged occurs,
-		// the likely hood of traveling true NORTH, SOUTH, EAST and WEST slim. So,
-		// we exclude these direction from game play.
-	
-		 AlrightManager.stateListener = new ArrayList<ManagerStateListener>();
+
 		this.compassHeadings = new ArrayList<String>();
 		this.onlyRightTurns = false;
 		
-		//this.compassHeadings.add("N");
-		this.compassHeadings.add("NE");
-		//this.compassHeadings.add("E");
-		this.compassHeadings.add("SE");
-		//this.compassHeadings.add("S");
-		this.compassHeadings.add("SW");
-		//this.compassHeadings.add("W");
-		this.compassHeadings.add("NW");	
+		this.compassHeadings.add(AlrightManager.COMPASS_HEADING_NORTH);
+		this.compassHeadings.add(AlrightManager.COMPASS_HEADING_NORTH_EAST);
+		this.compassHeadings.add(AlrightManager.COMPASS_HEADING_EAST);
+		this.compassHeadings.add(AlrightManager.COMPASS_HEADING_SOUTH_EAST);
+		this.compassHeadings.add(AlrightManager.COMPASS_HEADING_SOUTH);
+		this.compassHeadings.add(AlrightManager.COMPASS_HEADING_SOUTH_WEST);
+		this.compassHeadings.add(AlrightManager.COMPASS_HEADING_WEST);
+		this.compassHeadings.add(AlrightManager.COMPASS_HEADING_NORTH_WEST);	
 	} // end constructor
 
-	/*
-	 * Adds the listener to the manager
-	 * 
-	 * @param listener use to observe the manager 
-	 */
-	private void addManagerStateListener(ManagerStateListener listener) {
-		if (!stateListener.contains(listener)) {
-			stateListener.add(listener);
-		}
-	} // end addManagerStateListener
-
-	/*
-	 * Removes the listener from the manager
-	 * @param listener remove from observing the manager
-	 */
-	private void removeManagerStateListener(ManagerStateListener listener) {
-		if(stateListener.contains(listener)) {
-			stateListener.remove(listener);
-		}
-	} // end removeManagerStateListener
-	
 	/**
 	 * Connects the manager to specific system services such as <br/>
 	 * 
@@ -238,18 +290,20 @@ public class AlrightManager implements
 	 * @return AlrightManager
 	 */
 	private AlrightManager connect() {
-		if (this.googleApiClient != null && this.googleApiClient.isConnected()) {
-			Log.d(LOG_TAG, "Connected");
-
-			this.handleManagerStateChange(new ManagerState(AlrightStateType.CONNECTED,
-					"Manager already connected"));
-			return this;
-		}
-
-		Log.d(LOG_TAG, "Connecting");
-		if(this.googleApiClient != null && this.googleApiClient.isConnecting())
-			return this;
+		// NOTE: Documentation status you should check but why,
+		// this service is core to standard Android devices. If
+		// the device is possibly rooted and customized outside 
+		// normal manufacture load, then maybe we could have 
+		// a problem.
 		
+		// int status = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this.context);
+		//if(ConnectionResult.SUCCESS != status) {
+		//	...			
+		//}
+		
+		if(AlrightManager.stateListeners == null)
+			AlrightManager.stateListeners = new ArrayList<ManagerStateListener>();
+				
 		this.googleApiClient = new GoogleApiClient.Builder(this.context)
 			.addApi(LocationServices.API)
 			.addOnConnectionFailedListener(this)
@@ -257,7 +311,8 @@ public class AlrightManager implements
 			.build();
 	
 		this.googleApiClient.connect();
-
+		this.handleManagerStateChange(new ManagerState(AlrightStateType.CONNECTING, "Connecting"));
+		
 		return this;
 	} // end connect
 
@@ -271,31 +326,7 @@ public class AlrightManager implements
 	private void disconnect(ManagerStateListener listener) {
 		Log.d(LOG_TAG, "Disconnecting the manager");
 
-		if(AlrightManager.manager == null)
-			return;
-		
-		if (this.googleApiClient != null) {
-			this.googleApiClient.disconnect();
-		}
-
-		this.handleManagerStateChange(new ManagerState(AlrightStateType.DISCONNECTED,
-				"Manager disconnected"));
-
-		this.removeManagerStateListener(listener);
-		
-		// Clean up
-		this.context = null;
-		this.googleApiClient = null;
-		this.currentDirection = null;
-		this.myDestination = null;
-		
-		this.compassHeadings.clear();
-		this.compassHeadings = null;
-
-		AlrightManager.stateListener.clear();
-		AlrightManager.stateListener = null;
-		
-		AlrightManager.manager = null;
+		AlrightManager.resetInstance(listener);
 	} // end disconnect
 
 	/**
@@ -304,8 +335,8 @@ public class AlrightManager implements
 	 * @param state
 	 */
 	private void handleManagerStateChange(ManagerState state) {
-		//Log.d(LOG_TAG, "Handling manager state change");
-		for (ManagerStateListener listener : stateListener) {
+		//Log.d(LOG_TAG, "Handling manager state change");		
+		for (ManagerStateListener listener : stateListeners) {
 			listener.onManagerStateChanged(state);
 		}
 	}
@@ -317,7 +348,13 @@ public class AlrightManager implements
 	public void startMain(ManagerStateListener listener) {
 		Log.d(LOG_TAG, "Start Main");
 
-		this.addManagerStateListener(listener);	
+		AlrightManager.addManagerStateListener(listener);
+		
+		if (this.googleApiClient != null && this.googleApiClient.isConnected()) {
+			this.handleManagerStateChange(new ManagerState(AlrightStateType.CONNECTED,
+					"Manager Google API Client connected"));
+		}
+
 		this.stopLocationUpdateRequests();
 	} // end startMain
 	
@@ -341,7 +378,7 @@ public class AlrightManager implements
 	public void startHelp(ManagerStateListener listener) {
 		Log.d(LOG_TAG, "Start Help");
 
-		this.addManagerStateListener(listener);	
+		AlrightManager.addManagerStateListener(listener);	
 	} // end startHelp	
 	
 	/*
@@ -351,7 +388,7 @@ public class AlrightManager implements
 	public void stopHelp(ManagerStateListener listener) {
 		Log.d(LOG_TAG, "Stop Help");
 
-		this.removeManagerStateListener(listener);	
+		AlrightManager.removeManagerStateListener(listener);	
 	} // end stopHelp
 	
 	/**
@@ -361,9 +398,9 @@ public class AlrightManager implements
 	public void startSetup(ManagerStateListener listener) {
 		Log.d(LOG_TAG, "Start Setup");
 
-		this.addManagerStateListener(listener);
+		AlrightManager.addManagerStateListener(listener);
 		
-		this.myDestination = null;
+		this.myDestinationAddress = null;
 		this.onlyRightTurns = true;
 
 		this.setMyLastKnownLocation();
@@ -380,7 +417,7 @@ public class AlrightManager implements
 	public void stopSetup(ManagerStateListener listener) {
 		Log.d(LOG_TAG, "Stop Setup");
 
-		this.removeManagerStateListener(listener);	
+		AlrightManager.removeManagerStateListener(listener);	
 	} // end stopSetup
 
 	/**
@@ -390,9 +427,9 @@ public class AlrightManager implements
 	public void startTracker(ManagerStateListener listener) {
 		Log.d(LOG_TAG,	"Start Tracker");
 
-		this.addManagerStateListener(listener);
+		AlrightManager.addManagerStateListener(listener);
 		
-		if (this.myDestination == null) {
+		if (this.myDestinationAddress == null) {
 			this.handleManagerStateChange(new ManagerState(AlrightStateType.ERROR,
 					"Choose a destination..."));
 			return;
@@ -410,7 +447,7 @@ public class AlrightManager implements
 	public void stopTracker(ManagerStateListener listener) {
 		Log.d(LOG_TAG, "Stop Tracker");
 
-		this.removeManagerStateListener(listener);	
+		AlrightManager.removeManagerStateListener(listener);	
 	} // end stopTracker
 
 	/**
@@ -440,18 +477,24 @@ public class AlrightManager implements
 	} // end stopLocationUpdateRequests
 	
 	/**
-	 * Sets the turn direction for game play. Default is TURN_DIRECTION_RIGHT.
+	 * Sets the turn direction for game play.
 	 * 
 	 * @param direction
 	 */
 	public void completeGameSetup(boolean onlyRightTurns) {
 		Log.d(LOG_TAG, "Setting the turn direction...");
 
-		if(!(this.onlyRightTurns=onlyRightTurns))
+		// Reserve the order and ensure NORTH is always first
+		if(!(this.onlyRightTurns=onlyRightTurns)) {
+			this.compassHeadings.remove(0);
+			this.compassHeadings.trimToSize();
 			Collections.reverse(this.compassHeadings);
+			this.compassHeadings.add("N");
+		}
 		
+		// Return copy of the compass heading
 		this.handleManagerStateChange(new ManagerState(AlrightStateType.GAME_SETUP_COMPLETE,
-				String.format("Only %s turns allow during game play", (this.onlyRightTurns)?"right":"left")));
+				this.compassHeadings.clone()));
 		
 	} // end setTurnDirection
 
@@ -464,6 +507,8 @@ public class AlrightManager implements
 		Location location = LocationServices.FusedLocationApi.getLastLocation(this.googleApiClient);
 		
 		if(location != null) {
+			this.currentDirection = AlrightManager.computeCompassDirection(location.getBearing());
+			
 			this.handleManagerStateChange(new ManagerState(
 					AlrightStateType.MY_LOCATION, 
 					this.getAddress(location.getLatitude(),location.getLongitude())));
@@ -492,11 +537,17 @@ public class AlrightManager implements
 	public void setMyDestination(String myDestination, int position) {
 		Log.d(LOG_TAG,	String.format("Setting my destination to %s at position %s", myDestination, position));
 
-		this.myDestination = this.getAddress(myDestination, position);
+		this.myDestinationAddress = this.getAddress(myDestination, position);
 
-		this.handleManagerStateChange(new ManagerState(
-				AlrightStateType.DESTINATION_CHANGED, 
-				this.myDestination));
+		if(this.myDestinationAddress != null) {
+			this.handleManagerStateChange(new ManagerState(
+					AlrightStateType.DESTINATION_CHANGED, 
+					this.myDestinationAddress));
+		} else {
+			this.handleManagerStateChange(new ManagerState(
+					AlrightStateType.ERROR, 
+					this.myDestinationAddress));
+		}
 	}
 
 	/**
@@ -628,7 +679,7 @@ public class AlrightManager implements
 		Log.d(LOG_TAG, String.format("Location changed to %s", location));
 
 		// NOTE: Should we handle this using LocationManager.addProximityAlert()		
-		if(location.getLatitude() == this.myDestination.getLatitude() && 
+/*		if(location.getLatitude() == this.myDestination.getLatitude() && 
 			location.getLongitude() == this.myDestination.getLongitude()) {
 			this.handleManagerStateChange(new ManagerState(AlrightStateType.GAME_OVER_WINNER, "YOU WIN!"));
 		}
@@ -638,8 +689,8 @@ public class AlrightManager implements
 			this.currentDirection = actualDirection;
 		
 		// Are we still on track
-		AlrightStateType stateType = AlrightStateType.STILL_ON_TRACK;
-		if(!this.currentDirection.equalsIgnoreCase(actualDirection)) {
+*/		AlrightStateType stateType = AlrightStateType.STILL_ON_TRACK;
+/*		if(!this.currentDirection.equalsIgnoreCase(actualDirection)) {
 			
 			// Get index of next possible direction
 			int index = this.compassHeadings.indexOf(this.currentDirection)+1;
@@ -652,7 +703,7 @@ public class AlrightManager implements
 			}
 		} // end if
 		
-		this.handleManagerStateChange(new ManagerState(stateType, location));
+*/		this.handleManagerStateChange(new ManagerState(stateType, location));
 	}
 
 	@Override

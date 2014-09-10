@@ -4,7 +4,7 @@ import java.util.List;
 
 import android.app.SearchManager;
 import android.content.ContentProvider;
-import android.content.ContentResolver;
+//import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
